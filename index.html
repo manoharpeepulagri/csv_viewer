@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nandi Curtis | Field vs Travel</title>
+    <title>Nandi Curtis | Responsive</title>
     
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -17,10 +17,8 @@
             --text-main: #1a202c; --text-sub: #718096;
             --border: #e2e8f0; --accent: #2b6cb0;
             
-            --c-travel: #3182ce; /* Blue */
-            --c-field: #d69e2e;  /* Orange */
-            --c-idle: #e53e3e;   /* Red (KPI only) */
-            --c-regen: #38a169;  /* Green */
+            --c-travel: #3182ce; --c-field: #d69e2e;
+            --c-idle: #e53e3e; --c-regen: #38a169;
         }
 
         [data-theme="dark"] {
@@ -36,69 +34,95 @@
         .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; z-index: 20; flex-shrink: 0; }
         .brand { font-size: 18px; font-weight: 800; margin-bottom: 25px; display: flex; align-items: center; gap: 8px; }
         .upload-box { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; margin-bottom: 15px; }
-        .upload-box:hover { background: rgba(43, 108, 176, 0.05); border-color: var(--accent); }
         .theme-toggle { margin-top: auto; padding: 10px; background: var(--bg-body); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; color: var(--text-main); font-weight: 600; }
 
         /* Main Content */
-        .main { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 25px; }
+        .main { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; -webkit-overflow-scrolling: touch; }
         
         /* Headers */
         .section-head { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-sub); border-left: 4px solid var(--accent); padding-left: 10px; margin-bottom: 5px; }
 
         /* Grid */
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
-        .kpi-card { background: var(--bg-card); padding: 18px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-        .kpi-title { font-size: 12px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; margin-bottom: 5px; }
-        .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; }
-        .kpi-unit { font-size: 12px; color: var(--text-sub); }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        .kpi-card { background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .kpi-title { font-size: 11px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; margin-bottom: 5px; }
+        .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; }
+        .kpi-unit { font-size: 11px; color: var(--text-sub); }
 
         /* Charts */
-        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 350px; }
-        .chart-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 15px; display: flex; flex-direction: column; }
-        .full-width { grid-column: span 2; height: 400px; }
-        .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; min-height: 320px; }
+        .chart-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; }
+        .full-width { grid-column: span 2; height: 350px; }
+        .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
 
-        /* Table - FIXED FOR LAPTOP */
-        .table-container { 
-            background: var(--bg-card); 
-            border: 1px solid var(--border); 
-            border-radius: 8px; 
-            /* STRICT HEIGHT ENFORCEMENT */
-            height: 400px; 
-            max-height: 500px;
-            overflow-y: scroll; /* Always show scrollbar */
-            display: block;
+        /* TABLE - FIXED FOR 100% ZOOM AND MOBILE */
+        .table-wrapper {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            /* Viewport based height ensures it fits on small laptops without scroll issues */
+            max-height: 50vh; 
+            overflow: auto; /* Handles both X and Y scrolling */
+            display: flex;
+            flex-direction: column;
         }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { position: sticky; top: 0; background: var(--bg-body); padding: 12px; text-align: left; color: var(--text-sub); font-weight: 600; border-bottom: 2px solid var(--border); z-index: 2; }
-        td { padding: 12px; border-bottom: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; }
+
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 12px; 
+            min-width: 500px; /* Forces horizontal scroll on tiny phones instead of squishing */
+        }
         
+        th { 
+            position: sticky; 
+            top: 0; 
+            background: var(--bg-body); 
+            padding: 12px; 
+            text-align: left; 
+            color: var(--text-sub); 
+            font-weight: 600; 
+            border-bottom: 2px solid var(--border); 
+            z-index: 10;
+        }
+        
+        td { 
+            padding: 10px 12px; 
+            border-bottom: 1px solid var(--border); 
+            font-family: 'JetBrains Mono', monospace; 
+        }
+        
+        /* Mobile Layout */
+        @media (max-width: 1000px) {
+            body { flex-direction: column; overflow: visible; height: 100%; }
+            .sidebar { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; border-right: none; border-bottom: 1px solid var(--border); padding: 10px 15px; position: sticky; top: 0; }
+            .main { padding: 15px; overflow: visible; }
+            .chart-row { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
+            .upload-box { margin-bottom: 0; padding: 6px 12px; }
+            
+            /* Table specific mobile fix */
+            .table-wrapper { max-height: 400px; } /* Fixed height on mobile for scroll feel */
+        }
+
         /* Loading */
-        #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; display: none; align-items: center; justify-content: center; flex-direction: column; color: white; }
+        #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 100; display: none; align-items: center; justify-content: center; flex-direction: column; color: white; }
         .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        @media (max-width: 1000px) {
-            body { flex-direction: column; overflow: visible; }
-            .sidebar { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; border-right: none; border-bottom: 1px solid var(--border); padding: 15px; }
-            .chart-row { grid-template-columns: 1fr; }
-            .full-width { grid-column: span 1; }
-            .upload-box { margin-bottom: 0; padding: 8px 15px; display: flex; align-items: center; gap: 8px; }
-        }
     </style>
 </head>
 <body data-theme="light">
 
-<div id="loader"><div class="spinner"></div><div style="margin-top:15px; font-weight:600;">Processing Precision Data...</div></div>
+<div id="loader"><div class="spinner"></div><div style="margin-top:15px; font-weight:600;">Processing...</div></div>
 
 <aside class="sidebar">
     <div class="brand">Nandi Curtis <span style="font-size:20px; color:#f6ad55;">⚡</span></div>
     <label class="upload-box">
         <input type="file" id="fileInput" accept=".csv, .xlsx" hidden onchange="handleFile(this)">
-        <span style="font-size:13px; font-weight:600; color:var(--accent);">📂 Upload Log</span>
+        <span style="font-size:13px; font-weight:600; color:var(--accent);">📂 Upload</span>
     </label>
     <button class="theme-toggle" onclick="toggleTheme()">🌗 Theme</button>
-    <div id="file-meta" style="margin-top:20px; font-size:11px; color:var(--text-sub);">v12.0 Two-Mode Logic</div>
 </aside>
 
 <main class="main" id="dashboard" style="display:none;">
@@ -116,15 +140,14 @@
         <div class="kpi-card" style="border-left:4px solid var(--c-idle);">
             <div class="kpi-title">Idle Loss</div>
             <div><span class="kpi-val" id="val-idle">0.0</span><span class="kpi-unit">Wh</span></div>
-            <div style="font-size:11px; opacity:0.7;">Stationary Consumption</div>
         </div>
         <div class="kpi-card" style="border-left:4px solid var(--accent);">
-            <div class="kpi-title">Total Duration</div>
+            <div class="kpi-title">Duration</div>
             <div><span class="kpi-val" id="val-duration">0h 0m</span></div>
         </div>
     </div>
 
-    <div class="section-head">Mode Breakdown (Field vs Travel)</div>
+    <div class="section-head">Mode Breakdown</div>
     <div class="kpi-grid">
         <div class="kpi-card" style="border-left:4px solid var(--c-field);">
             <div class="kpi-title">Field Mode</div>
@@ -145,23 +168,23 @@
     <div class="section-head">Visual Analysis</div>
     <div class="chart-row">
         <div class="chart-card">
-            <div class="chart-title">Cumulative Energy (Field vs Travel)</div>
+            <div class="chart-title">Cumulative Energy</div>
             <div id="chart-cumul" style="flex:1;"></div>
         </div>
         <div class="chart-card">
-            <div class="chart-title">Motor Load (RPM vs Current)</div>
+            <div class="chart-title">Motor Load</div>
             <div id="chart-motor" style="flex:1;"></div>
         </div>
     </div>
 
     <div class="section-head">Peak Events Log</div>
-    <div class="table-container">
+    <div class="table-wrapper">
         <table>
             <thead>
                 <tr>
-                    <th>Event Parameter</th>
-                    <th>Peak Value</th>
-                    <th>Timestamp</th>
+                    <th>Parameter</th>
+                    <th>Value</th>
+                    <th>Time</th>
                     <th>Mode</th>
                 </tr>
             </thead>
@@ -169,7 +192,7 @@
         </table>
     </div>
     
-    <div style="height:30px;"></div>
+    <div style="height:20px;"></div>
 
 </main>
 
@@ -183,7 +206,6 @@
 
     function handleFile(input) {
         if(!input.files[0]) return;
-        document.getElementById('file-meta').innerText = input.files[0].name;
         document.getElementById('loader').style.display = 'flex';
         setTimeout(() => {
             const file = input.files[0];
@@ -202,30 +224,24 @@
     }
 
     function process(data) {
-        if(!data || data.length < 5) return alert("Invalid Data");
+        if(!data || data.length < 5) {
+            document.getElementById('loader').style.display = 'none';
+            return alert("Invalid Data");
+        }
 
         const keys = Object.keys(data[0]);
         const find = (arr) => keys.find(k => arr.some(x => k.toLowerCase().includes(x)));
 
         const C = {
-            t: find(['timestamp', 'time']),
-            v: find(['voltage']), a: find(['current']), s: find(['speed']),
-            rpm: find(['rpm']),
+            t: find(['timestamp', 'time']), v: find(['voltage']), a: find(['current']),
+            s: find(['speed']), rpm: find(['rpm']),
             fld: find(['field_mode']), trav: find(['travel_mode']),
             mt: find(['mtr_temp']), ct: find(['ctrl_temp'])
         };
 
         const res = { t:[], p:[], s:[], rpm:[], a:[], cumF:[], cumT:[] };
-        let stats = {
-            whT:0, whR:0, whI:0, whF:0, whTr:0,
-            tT:0, tF:0, tTr:0
-        };
-
-        // Strict 2-Mode Logic
-        // Peaks stored as objects
-        let peaks = {
-            spd: {v:0}, pwr: {v:0}, amp: {v:0}, mt: {v:-99}, ct: {v:-99}
-        };
+        let stats = { whT:0, whR:0, whI:0, whF:0, whTr:0, tT:0, tF:0, tTr:0 };
+        let peaks = { spd:{v:0}, pwr:{v:0}, amp:{v:0}, mt:{v:-99}, ct:{v:-99} };
 
         let prevT = null;
         let runF = 0, runT = 0;
@@ -247,33 +263,24 @@
             const MT = parseFloat(row[C.mt])||0;
             const CT = parseFloat(row[C.ct])||0;
             
-            // STRICT MODE LOGIC
-            // If Field_Mode is 1, it is FIELD.
-            // Otherwise, it is TRAVEL.
             const isField = parseInt(row[C.fld]) === 1;
-            const modeName = isField ? "Field Mode" : "Travel Mode";
+            const mName = isField ? "Field" : "Travel";
 
-            // Peak Check
             const tDisp = tStr.split(' ')[1] || tStr;
-            const check = (k, val) => { if(val > peaks[k].v) peaks[k] = {v:val, t:tDisp, m:modeName}; };
-            check('spd', S); check('pwr', P); check('amp', A); check('mt', MT); check('ct', CT);
+            const chk = (k, v) => { if(v > peaks[k].v) peaks[k] = {v:v, t:tDisp, m:mName}; };
+            chk('spd', S); chk('pwr', P); chk('amp', A); chk('mt', MT); chk('ct', CT);
 
-            // Integration
             if(prevT) {
                 const sec = (dt - prevT) / 1000;
                 if(sec > 0 && sec < 300) {
                     stats.tT += sec;
-                    
-                    if(isField) stats.tF += sec;
-                    else stats.tTr += sec;
+                    if(isField) stats.tF += sec; else stats.tTr += sec;
 
                     const wh = (P * sec) / 3600;
                     if(wh > 0) {
                         stats.whT += wh;
                         if(isField) { stats.whF += wh; runF += wh; }
                         else { stats.whTr += wh; runT += wh; }
-
-                        // Idle: Stationary but On
                         if(S < 0.1 && P > 0) stats.whI += wh;
                     } else {
                         stats.whR += Math.abs(wh);
@@ -283,13 +290,9 @@
             prevT = dt;
 
             if(i % step === 0) {
-                res.t.push(tStr);
-                res.p.push(P);
-                res.s.push(S);
-                res.a.push(A);
-                res.rpm.push(RPM);
-                res.cumF.push(runF);
-                res.cumT.push(runT);
+                res.t.push(tStr); res.p.push(P); res.s.push(S);
+                res.a.push(A); res.rpm.push(RPM);
+                res.cumF.push(runF); res.cumT.push(runT);
             }
         }
 
@@ -314,43 +317,41 @@
         document.getElementById('val-travel-wh').innerText = fN(stats.whTr);
         document.getElementById('val-travel-time').innerText = fT(stats.tTr);
 
-        // Table
-        const tbody = document.getElementById('peak-table-body');
+        const tb = document.getElementById('peak-table-body');
         const mk = (l, v, u, p) => `<tr>
             <td style="font-weight:600;">${l}</td>
             <td style="color:var(--accent); font-weight:700;">${fN(v)} ${u}</td>
             <td>${p.t}</td>
-            <td><span style="padding:4px 8px; border-radius:4px; font-size:11px; background:${p.m.includes('Field')?'var(--c-field)':'var(--c-travel)'}; color:white;">${p.m}</span></td>
+            <td><span style="padding:3px 6px; border-radius:4px; font-size:10px; background:${p.m==='Field'?'var(--c-field)':'var(--c-travel)'}; color:white;">${p.m}</span></td>
         </tr>`;
         
-        tbody.innerHTML = 
-            mk("Peak Speed", peaks.spd.v, "km/h", peaks.spd) +
-            mk("Peak Power", peaks.pwr.v, "W", peaks.pwr) +
-            mk("Peak Current", peaks.amp.v, "A", peaks.amp) +
-            mk("Max Motor Temp", peaks.mt.v, "°C", peaks.mt) +
+        tb.innerHTML = 
+            mk("Max Speed", peaks.spd.v, "km/h", peaks.spd) +
+            mk("Max Power", peaks.pwr.v, "W", peaks.pwr) +
+            mk("Max Current", peaks.amp.v, "A", peaks.amp) +
+            mk("Max Mtr Temp", peaks.mt.v, "°C", peaks.mt) +
             mk("Max Ctrl Temp", peaks.ct.v, "°C", peaks.ct);
 
-        // Charts
         const isDark = theme === 'dark';
         const tc = isDark ? '#e2e8f0' : '#2d3748';
         const gc = isDark ? '#4a5568' : '#e2e8f0';
         const ly = {
             paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-            font: { family: 'Inter', color: tc, size: 11 },
-            xaxis: { gridcolor: gc, zeroline:false }, yaxis: { gridcolor: gc, zeroline:false },
-            margin: { t:30, r:10, l:40, b:30 }, showlegend: true, legend: { orientation:'h', y:1.1 },
+            font: { family: 'Inter', color: tc, size: 10 },
+            xaxis: { gridcolor: gc }, yaxis: { gridcolor: gc },
+            margin: { t:25, r:10, l:35, b:25 }, showlegend: true, legend: { orientation:'h', y:1.1 },
             hovermode: 'x unified'
         };
         const cfg = { responsive: true, displayModeBar: false };
 
         Plotly.newPlot('chart-cumul', [
-            { x: res.t, y: res.cumT, name: 'Travel Wh', type: 'scattergl', line: {color: '#3182ce'} },
-            { x: res.t, y: res.cumF, name: 'Field Wh', type: 'scattergl', line: {color: '#d69e2e'} }
-        ], { ...ly, yaxis: { title: 'Watt-hours' } }, cfg);
+            { x: res.t, y: res.cumT, name: 'Travel', type: 'scattergl', line: {color: '#3182ce'} },
+            { x: res.t, y: res.cumF, name: 'Field', type: 'scattergl', line: {color: '#d69e2e'} }
+        ], { ...ly, yaxis: { title: 'Wh' } }, cfg);
 
         Plotly.newPlot('chart-motor', [
             { x: res.t, y: res.rpm, name: 'RPM', type: 'scattergl', line: {color: '#805ad5'} },
-            { x: res.t, y: res.a, name: 'Current (A)', yaxis: 'y2', type: 'scattergl', line: {color: '#e53e3e'} }
+            { x: res.t, y: res.a, name: 'Amps', yaxis: 'y2', type: 'scattergl', line: {color: '#e53e3e'} }
         ], { ...ly, yaxis2: { overlaying: 'y', side: 'right' } }, cfg);
     }
 </script>
