@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nandi Curtis | v16 Final</title>
+    <title>Nandi Curtis | Precision Analytics</title>
     
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -16,7 +16,6 @@
             --bg-body: #f8f9fa; --bg-card: #ffffff; --bg-side: #ffffff;
             --text-main: #1a202c; --text-sub: #718096;
             --border: #e2e8f0; --accent: #2b6cb0;
-            
             --c-travel: #3182ce; --c-field: #d69e2e;
             --c-idle: #e53e3e; --c-regen: #38a169;
         }
@@ -43,16 +42,23 @@
         /* Headers */
         .section-head { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-sub); border-left: 4px solid var(--accent); padding-left: 10px; margin-bottom: 5px; }
 
-        /* KPI Grid (Top) */
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+        /* Grid */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 15px; }
         .kpi-card { background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .kpi-title { font-size: 11px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; margin-bottom: 5px; }
-        .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; }
+        .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; }
         .kpi-unit { font-size: 11px; color: var(--text-sub); }
+        .kpi-desc { font-size: 10px; color: var(--text-sub); margin-top: 4px; opacity: 0.8; }
+
+        /* Charts */
+        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; min-height: 350px; }
+        .chart-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; }
+        .full-width { grid-column: span 2; height: 400px; }
+        .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
 
         /* Middle Split Section */
         .middle-section { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; min-height: 250px; }
-        
+
         /* Table Wrapper (Fixed Visibility) */
         .table-wrapper {
             background: var(--bg-card);
@@ -60,7 +66,7 @@
             border-radius: 8px;
             height: 100%; 
             min-height: 300px;
-            max-height: 400px; /* Limits height so it scrolls on laptop */
+            max-height: 400px; 
             overflow: auto; 
             display: flex; flex-direction: column;
         }
@@ -72,14 +78,6 @@
         /* Mode KPI Stack */
         .mode-stack { display: flex; flex-direction: column; gap: 10px; height: 100%; }
         .mode-card { flex: 1; display: flex; flex-direction: column; justify-content: center; background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
-
-        /* Charts */
-        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; min-height: 320px; }
-        .chart-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; min-height: 350px;}
-        .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
-        
-        /* Full Width Chart */
-        .full-width { grid-column: span 2; }
 
         /* Mobile Layout */
         @media (max-width: 1000px) {
@@ -103,37 +101,40 @@
 </head>
 <body data-theme="light">
 
-<div id="loader"><div class="spinner"></div><div style="margin-top:15px; font-weight:600;">Processing Precision Data...</div></div>
+<div id="loader"><div class="spinner"></div><div style="margin-top:15px; font-weight:600;">Calculating Precision Data...</div></div>
 
 <aside class="sidebar">
     <div class="brand">Nandi Curtis <span style="font-size:20px; color:#f6ad55;">⚡</span></div>
     <label class="upload-box">
         <input type="file" id="fileInput" accept=".csv, .xlsx" hidden onchange="handleFile(this)">
-        <span style="font-size:13px; font-weight:600; color:var(--accent);">📂 Upload</span>
+        <span style="font-size:13px; font-weight:600; color:var(--accent);">📂 Upload Log</span>
     </label>
     <button class="theme-toggle" onclick="toggleTheme()">🌗 Theme</button>
 </aside>
 
 <main class="main" id="dashboard" style="display:none;">
 
-    <div class="section-head">System Overview</div>
+    <div class="section-head">System Energy Overview</div>
     <div class="kpi-grid">
         <div class="kpi-card" style="border-left:4px solid var(--text-main);">
             <div class="kpi-title">Total Energy Consumed</div>
             <div><span class="kpi-val" id="val-total">0.0</span><span class="kpi-unit">Wh</span></div>
+            <div class="kpi-desc">Total Active Consumption</div>
         </div>
         <div class="kpi-card" style="border-left:4px solid var(--c-regen);">
             <div class="kpi-title">Regenerated Energy</div>
             <div><span class="kpi-val" id="val-regen">0.0</span><span class="kpi-unit">Wh</span></div>
+            <div class="kpi-desc">Recovered to Battery</div>
         </div>
         <div class="kpi-card" style="border-left:4px solid var(--c-idle);">
             <div class="kpi-title">Idle Energy Loss</div>
             <div><span class="kpi-val" id="val-idle">0.0</span><span class="kpi-unit">Wh</span></div>
-            <div style="font-size:11px; opacity:0.7;">Vehicle Stationary but On</div>
+            <div class="kpi-desc">Vehicle Stationary but On</div>
         </div>
         <div class="kpi-card" style="border-left:4px solid var(--accent);">
             <div class="kpi-title">Duration</div>
             <div><span class="kpi-val" id="val-duration">0h 0m</span></div>
+            <div class="kpi-desc">Total Log Time</div>
         </div>
     </div>
 
@@ -144,7 +145,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Peak Event</th>
+                        <th>Peak Parameter</th>
                         <th>Value</th>
                         <th>Time</th>
                         <th>Mode</th>
@@ -172,22 +173,22 @@
         </div>
     </div>
 
-    <div class="section-head" style="margin-top:10px;">Visual Trends</div>
+    <div class="section-head" style="margin-top:10px;">Visual Analytics</div>
     
     <div class="chart-row">
         <div class="chart-card">
-            <div class="chart-title">Cumulative Energy</div>
-            <div id="chart-cumul" style="flex:1;"></div>
+            <div class="chart-title">Electrical Operating Point (V vs I)</div>
+            <div id="chart-vi" style="flex:1;"></div>
         </div>
         <div class="chart-card">
-            <div class="chart-title">Motor Load</div>
-            <div id="chart-motor" style="flex:1;"></div>
+            <div class="chart-title">Cumulative Energy Trend</div>
+            <div id="chart-cumul" style="flex:1;"></div>
         </div>
     </div>
 
     <div class="chart-row">
         <div class="chart-card full-width">
-            <div class="chart-title">Speed vs Power Timeline</div>
+            <div class="chart-title">Speed & Power Timeline</div>
             <div id="chart-power" style="flex:1;"></div>
         </div>
     </div>
@@ -239,19 +240,20 @@
             mt: find(['mtr_temp']), ct: find(['ctrl_temp'])
         };
 
-        const res = { t:[], p:[], s:[], rpm:[], a:[], cumF:[], cumT:[] };
+        const res = { t:[], p:[], s:[], rpm:[], a:[], v:[], cumF:[], cumT:[] };
         let stats = { whT:0, whR:0, whI:0, whF:0, whTr:0, tT:0, tF:0, tTr:0 };
         let peaks = { spd:{v:0}, pwr:{v:0}, amp:{v:0}, mt:{v:-99}, ct:{v:-99} };
 
         let prevT = null;
         let runF = 0, runT = 0;
-        const step = Math.ceil(data.length / 5000);
+        const step = Math.ceil(data.length / 5000); // Decimation for charts only
 
         for(let i=0; i<data.length; i++) {
             const row = data[i];
             let tStr = row[C.t];
             if(!tStr) continue;
-            // Clean Timestamp
+            
+            // Handle Nanoseconds
             if(tStr.length > 23 && tStr.includes('.')) tStr = tStr.substring(0, 23);
             const dt = new Date(tStr);
             if(isNaN(dt)) continue;
@@ -264,29 +266,29 @@
             const MT = parseFloat(row[C.mt])||0;
             const CT = parseFloat(row[C.ct])||0;
             
-            // Logic: Field vs Travel (Strict)
             const isField = parseInt(row[C.fld]) === 1;
-            const mName = isField ? "Field" : "Travel";
+            const mName = isField ? "Field Mode" : "Travel Mode";
             const tDisp = tStr.split(' ')[1] || tStr;
 
-            // Check Peaks
+            // Peak Logic
             const chk = (k, v) => { if(v > peaks[k].v) peaks[k] = {v:v, t:tDisp, m:mName}; };
             chk('spd', S); chk('pwr', P); chk('amp', A); chk('mt', MT); chk('ct', CT);
 
-            // Integration (Row-by-Row Accuracy)
+            // Precision Energy Calculation
             if(prevT) {
                 const sec = (dt - prevT) / 1000;
-                if(sec > 0 && sec < 300) {
+                if(sec > 0 && sec < 300) { // Valid interval
                     stats.tT += sec;
                     if(isField) stats.tF += sec; else stats.tTr += sec;
 
                     const wh = (P * sec) / 3600;
+                    
                     if(wh > 0) {
                         stats.whT += wh;
                         if(isField) { stats.whF += wh; runF += wh; }
                         else { stats.whTr += wh; runT += wh; }
 
-                        // Idle: Stationary (<0.1kmph) but On (Power > 0)
+                        // Idle: Stationary but Consuming Power
                         if(S < 0.1 && P > 0) stats.whI += wh;
                     } else {
                         stats.whR += Math.abs(wh);
@@ -295,10 +297,10 @@
             }
             prevT = dt;
 
-            // Chart Decimation
+            // Chart Data Pushing (Decimated for Performance)
             if(i % step === 0) {
                 res.t.push(tStr); res.p.push(P); res.s.push(S);
-                res.a.push(A); res.rpm.push(RPM);
+                res.a.push(A); res.v.push(V); res.rpm.push(RPM);
                 res.cumF.push(runF); res.cumT.push(runT);
             }
         }
@@ -329,7 +331,7 @@
             <td style="font-weight:600;">${l}</td>
             <td style="color:var(--accent); font-weight:700;">${fN(v)} ${u}</td>
             <td>${p.t}</td>
-            <td><span style="padding:3px 6px; border-radius:4px; font-size:10px; background:${p.m==='Field'?'var(--c-field)':'var(--c-travel)'}; color:white;">${p.m}</span></td>
+            <td><span style="padding:3px 6px; border-radius:4px; font-size:10px; background:${p.m==='Field Mode'?'var(--c-field)':'var(--c-travel)'}; color:white;">${p.m}</span></td>
         </tr>`;
         
         tb.innerHTML = 
@@ -351,21 +353,24 @@
         };
         const cfg = { responsive: true, displayModeBar: false };
 
+        // 1. Voltage vs Current (Scatter)
+        Plotly.newPlot('chart-vi', [{
+            x: res.a, y: res.v, mode: 'markers', type: 'scattergl',
+            marker: { size: 3, color: res.p, colorscale: 'Viridis', showscale: false },
+            name: 'Operating Point'
+        }], { ...ly, xaxis: {title:'Current (A)', gridcolor:gc}, yaxis: {title:'Voltage (V)', gridcolor:gc}, hovermode:'closest' }, cfg);
+
+        // 2. Cumulative Energy
         Plotly.newPlot('chart-cumul', [
             { x: res.t, y: res.cumT, name: 'Travel', type: 'scattergl', line: {color: '#3182ce'} },
             { x: res.t, y: res.cumF, name: 'Field', type: 'scattergl', line: {color: '#d69e2e'} }
         ], { ...ly, yaxis: { title: 'Wh' } }, cfg);
 
-        Plotly.newPlot('chart-motor', [
-            { x: res.t, y: res.rpm, name: 'RPM', type: 'scattergl', line: {color: '#805ad5'} },
-            { x: res.t, y: res.a, name: 'Amps', yaxis: 'y2', type: 'scattergl', line: {color: '#e53e3e'} }
-        ], { ...ly, yaxis2: { overlaying: 'y', side: 'right' } }, cfg);
-
-        // RESTORED SPEED VS POWER CHART
+        // 3. Speed vs Power (Restored Full Width)
         Plotly.newPlot('chart-power', [
             { x: res.t, y: res.p, name: 'Power (W)', type: 'scattergl', fill:'tozeroy', line: {color: '#dd6b20', width:1} },
             { x: res.t, y: res.s, name: 'Speed', yaxis: 'y2', type: 'scattergl', line: {color: '#3182ce', width:2} }
-        ], { ...ly, yaxis2: { overlaying: 'y', side: 'right' } }, cfg);
+        ], { ...ly, yaxis2: { overlaying: 'y', side: 'right', title: 'km/h', showgrid:false } }, cfg);
     }
 </script>
 </body>
