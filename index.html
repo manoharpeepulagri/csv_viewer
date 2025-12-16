@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vehicle Traction Log Dashboard</title>
+    
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --text-color: #e0e0e0;
+            --accent-color: #4CAF50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #444;
+        }
+
+        .header h1 { margin: 0; font-size: 24px; }
+
+        .file-upload-container {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .btn {
+            border: 2px solid #444;
+            color: white;
+            background-color: var(--card-bg);
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover { background-color: var(--accent-color); border-color: var(--accent-color); }
+
+        input[type=file] {
+            font-size: 100px;
+            position: absolute;
+            left: 0;
+            top: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* Loading Spinner */
+        #loader {
+            display: none;
+            text-align: center;
+            margin: 20px;
+            font-size: 18px;
+            color: var(--accent-color);
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .kpi-card {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .kpi-value { font-size: 24px; font-weight: bold; color: var(--accent-color); }
+        .kpi-label { font-size: 12px; color: #aaa; margin-top: 5px; text-transform: uppercase; }
+
+        /* Charts Grid */
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .chart-wrapper {
+            background-color: var(--card-bg);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            height: 500px;
+        }
+
+        @media (min-width: 1200px) {
+            .charts-container { grid-template-columns: 1fr 1fr; }
+            .chart-wrapper.full-width { grid-column: span 2; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Vehicle Traction Analytics</h1>
+        <div class="file-upload-container">
+            <button class="btn">📂 Upload CSV / Excel</button>
+            <input type="file" id="fileInput" accept=".csv, .xlsx, .xls" />
+        </div>
+    </div>
+
+    <div id="loader">Processing Data... Please wait.</div>
+
+    <div id="dashboard" style="display: none;">
+        <div class="kpi-grid" id="kpiContainer"></div>
+
+        <div class="charts-container">
+            <div class="chart-wrapper full-width" id="chart-performance"></div>
+            
+            <div class="chart-wrapper" id="chart-electrical"></div>
+            
+            <div class="chart-wrapper" id="chart-thermal"></div>
+            
+            <div class="chart-wrapper full-width" id="chart-status"></div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const loader = document.getElementById('loader');
+        const dashboard = document.getElementById('dashboard');
+
+        fileInput.addEventListener('change', handleFile, false);
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            dashboard.style.display = 'none';
+            loader.style.display = 'block';
+            loader.innerText = `Reading ${file.name}...`;
+
+            // Small timeout to allow UI to update
+            setTimeout(() => {
+                if (file.name.endsWith('.csv')) {
+                    parseCSV(file);
+                } else if (file.name.match(/\.xlsx?$/)) {
+                    parseExcel(file);
+                } else {
+                    alert('Please upload a CSV or Excel file.');
+                    loader.style.display = 'none';
+                }
+            }, 100);
+        }
+
+        function parseCSV(file) {
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    processData(results.data);
+                }
+            });
+        }
+
+        function parseExcel(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
+                processData(jsonData);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function cleanColumnName(name) {
+            // Remove units like \nkmph, \nV, \nA, trim spaces
+            return name.split('\n')[0].trim();
+        }
+
+        function processData(rawData) {
+            loader.innerText = "Processing " + rawData.length + " rows...";
+            
+            // 1. Identify Columns & Clean Keys
+            if (rawData.length === 0) return;
+            
+            // Map raw keys to clean keys
+            const rawKeys = Object.keys(rawData[0]);
+            const keyMap = {}; // raw -> clean
+            
+            // Helper to find best matching key
+            function findKey(keywords) {
+                return rawKeys.find(k => {
+                    const clean = k.toLowerCase();
+                    return keywords.some(w => clean.includes(w));
+                });
+            }
+
+            // Mappings based on your file structure
+            const colMap = {
+                time: findKey(['timestamp', 'time']),
+                speed: findKey(['speed']),
+                rpm: findKey(['rpm', 'motor_rpm']),
+                voltage: findKey(['voltage', 'volts']),
+                current: findKey(['current\na', 'current']), // Specific check to avoid RMS currents
+                rms_current: findKey(['rms']),
+                ctrl_temp: findKey(['ctrl_temp', 'controller']),
+                mtr_temp: findKey(['mtr_temp', 'motor_temp']),
+                throttle: findKey(['acceleration']),
+                eff: findKey(['eff']),
+                cutback: findKey(['overall_cutback']),
+                power: findKey(['power'])
+            };
+
+            // 2. Extract Data Arrays (Column-oriented for Plotly)
+            const traces = {
+                time: [], speed: [], rpm: [], voltage: [], current: [],
+                ctrl_temp: [], mtr_temp: [], eff: [], cutback: [], power: []
+            };
+
+            // Statistics
+            let maxSpeed = 0, maxCurrent = 0, minVolts = 999, maxCtrlTemp = -999, maxMtrTemp = -999;
+
+            rawData.forEach(row => {
+                // Parse Time
+                let t = row[colMap.time];
+                // Handle high precision timestamps by truncation if necessary, though Plotly handles ISO strings well.
+                traces.time.push(t);
+
+                // Helper to parse float safely
+                const v = (key) => {
+                    const val = parseFloat(row[key]);
+                    return isNaN(val) ? 0 : val;
+                };
+
+                const s = v(colMap.speed);
+                const r = v(colMap.rpm);
+                const volt = v(colMap.voltage);
+                const curr = v(colMap.current); // Use the specific "Current A" column
+                const ct = v(colMap.ctrl_temp);
+                const mt = v(colMap.mtr_temp);
+
+                traces.speed.push(s);
+                traces.rpm.push(r);
+                traces.voltage.push(volt);
+                traces.current.push(curr);
+                traces.ctrl_temp.push(ct);
+                traces.mtr_temp.push(mt);
+                traces.eff.push(v(colMap.eff));
+                traces.cutback.push(v(colMap.cutback));
+                traces.power.push(v(colMap.power));
+
+                // Stats calculation
+                if (s > maxSpeed) maxSpeed = s;
+                if (curr > maxCurrent) maxCurrent = curr;
+                if (volt < minVolts && volt > 10) minVolts = volt; // Ignore 0v spikes
+                if (ct > maxCtrlTemp) maxCtrlTemp = ct;
+                if (mt > maxMtrTemp) maxMtrTemp = mt;
+            });
+
+            // 3. Render KPIs
+            renderKPIs({
+                "Max Speed": maxSpeed.toFixed(1) + " km/h",
+                "Max Current": maxCurrent.toFixed(1) + " A",
+                "Min Voltage": minVolts.toFixed(1) + " V",
+                "Peak Ctrl Temp": maxCtrlTemp.toFixed(1) + " °C",
+                "Peak Mtr Temp": maxMtrTemp.toFixed(1) + " °C",
+                "Total Rows": rawData.length.toLocaleString()
+            });
+
+            // 4. Render Charts
+            renderCharts(traces);
+
+            loader.style.display = 'none';
+            dashboard.style.display = 'block';
+        }
+
+        function renderKPIs(metrics) {
+            const container = document.getElementById('kpiContainer');
+            container.innerHTML = '';
+            for (const [label, value] of Object.entries(metrics)) {
+                const card = document.createElement('div');
+                card.className = 'kpi-card';
+                card.innerHTML = `<div class="kpi-value">${value}</div><div class="kpi-label">${label}</div>`;
+                container.appendChild(card);
+            }
+        }
+
+        function renderCharts(data) {
+            const commonLayout = {
+                paper_bgcolor: '#2d2d2d',
+                plot_bgcolor: '#2d2d2d',
+                font: { color: '#e0e0e0' },
+                xaxis: { gridcolor: '#444' },
+                yaxis: { gridcolor: '#444' },
+                margin: { t: 40, r: 50, l: 50, b: 40 },
+                hovermode: 'x unified',
+                showlegend: true,
+                legend: { orientation: 'h', y: 1.1 }
+            };
+
+            const config = { responsive: true, displayModeBar: true };
+
+            // Chart 1: Performance (Speed & RPM)
+            Plotly.newPlot('chart-performance', [
+                {
+                    x: data.time, y: data.speed, name: 'Speed (kmph)',
+                    type: 'scattergl', line: { width: 2, color: '#00d2ff' }
+                },
+                {
+                    x: data.time, y: data.rpm, name: 'Motor RPM',
+                    yaxis: 'y2', type: 'scattergl', line: { width: 1, color: '#ffeb3b' }
+                }
+            ], {
+                ...commonLayout,
+                title: 'Vehicle Performance',
+                yaxis: { title: 'Speed (kmph)', gridcolor: '#444' },
+                yaxis2: {
+                    title: 'RPM', overlaying: 'y', side: 'right',
+                    gridcolor: '#444', showgrid: false
+                }
+            }, config);
+
+            // Chart 2: Electrical
+            Plotly.newPlot('chart-electrical', [
+                {
+                    x: data.time, y: data.voltage, name: 'Voltage (V)',
+                    type: 'scattergl', line: { color: '#4CAF50' }
+                },
+                {
+                    x: data.time, y: data.current, name: 'Current (A)',
+                    yaxis: 'y2', type: 'scattergl', line: { color: '#f44336' }
+                }
+            ], {
+                ...commonLayout,
+                title: 'Electrical System',
+                yaxis: { title: 'Voltage (V)', gridcolor: '#444' },
+                yaxis2: { title: 'Current (A)', overlaying: 'y', side: 'right', showgrid: false }
+            }, config);
+
+            // Chart 3: Thermal
+            Plotly.newPlot('chart-thermal', [
+                {
+                    x: data.time, y: data.ctrl_temp, name: 'Controller Temp',
+                    type: 'scattergl', line: { color: '#ff9800' }
+                },
+                {
+                    x: data.time, y: data.mtr_temp, name: 'Motor Temp',
+                    type: 'scattergl', line: { color: '#e91e63' }
+                }
+            ], {
+                ...commonLayout,
+                title: 'Thermal Status (°C)',
+                yaxis: { title: 'Temperature (°C)', gridcolor: '#444' }
+            }, config);
+
+            // Chart 4: Status & Cutbacks
+            Plotly.newPlot('chart-status', [
+                {
+                    x: data.time, y: data.eff, name: 'Efficiency %',
+                    type: 'scattergl', fill: 'tozeroy', line: { color: '#8bc34a', width: 1 }
+                },
+                {
+                    x: data.time, y: data.cutback, name: 'Overall Cutback %',
+                    type: 'scattergl', line: { color: '#ff5722', width: 2 }
+                },
+                 {
+                    x: data.time, y: data.power, name: 'Power (W)',
+                    yaxis: 'y2', type: 'scattergl', visible: 'legendonly', line: { color: '#9c27b0' }
+                }
+            ], {
+                ...commonLayout,
+                title: 'Efficiency & Cutbacks',
+                yaxis: { title: 'Percentage (%)', range: [0, 110], gridcolor: '#444' },
+                yaxis2: { title: 'Power (W)', overlaying: 'y', side: 'right', showgrid: false }
+            }, config);
+        }
+    </script>
+</body>
+</html>
