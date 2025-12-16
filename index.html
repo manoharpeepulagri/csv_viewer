@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nandi Curtis | Responsive</title>
+    <title>Nandi Curtis | Layout v14</title>
     
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -34,6 +34,7 @@
         .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; z-index: 20; flex-shrink: 0; }
         .brand { font-size: 18px; font-weight: 800; margin-bottom: 25px; display: flex; align-items: center; gap: 8px; }
         .upload-box { border: 2px dashed var(--border); border-radius: 8px; padding: 20px; text-align: center; cursor: pointer; margin-bottom: 15px; }
+        .upload-box:hover { background: rgba(43, 108, 176, 0.05); border-color: var(--accent); }
         .theme-toggle { margin-top: auto; padding: 10px; background: var(--bg-body); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; color: var(--text-main); font-weight: 600; }
 
         /* Main Content */
@@ -42,67 +43,50 @@
         /* Headers */
         .section-head { font-size: 12px; font-weight: 700; text-transform: uppercase; color: var(--text-sub); border-left: 4px solid var(--accent); padding-left: 10px; margin-bottom: 5px; }
 
-        /* Grid */
+        /* KPI Grid (Top) */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
         .kpi-card { background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .kpi-title { font-size: 11px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; margin-bottom: 5px; }
         .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; }
         .kpi-unit { font-size: 11px; color: var(--text-sub); }
 
-        /* Charts */
-        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; min-height: 320px; }
-        .chart-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; }
-        .full-width { grid-column: span 2; height: 350px; }
-        .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
-
-        /* TABLE - FIXED FOR 100% ZOOM AND MOBILE */
+        /* Middle Split Section */
+        .middle-section { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; min-height: 250px; }
+        
+        /* Table Wrapper */
         .table-wrapper {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 8px;
-            /* Viewport based height ensures it fits on small laptops without scroll issues */
-            max-height: 50vh; 
-            overflow: auto; /* Handles both X and Y scrolling */
-            display: flex;
-            flex-direction: column;
+            /* Height matches the KPI cards on the right */
+            height: 100%; 
+            min-height: 250px;
+            overflow: auto; 
+            display: flex; flex-direction: column;
         }
 
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            font-size: 12px; 
-            min-width: 500px; /* Forces horizontal scroll on tiny phones instead of squishing */
-        }
-        
-        th { 
-            position: sticky; 
-            top: 0; 
-            background: var(--bg-body); 
-            padding: 12px; 
-            text-align: left; 
-            color: var(--text-sub); 
-            font-weight: 600; 
-            border-bottom: 2px solid var(--border); 
-            z-index: 10;
-        }
-        
-        td { 
-            padding: 10px 12px; 
-            border-bottom: 1px solid var(--border); 
-            font-family: 'JetBrains Mono', monospace; 
-        }
-        
+        table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 500px; }
+        th { position: sticky; top: 0; background: var(--bg-body); padding: 10px 12px; text-align: left; color: var(--text-sub); font-weight: 600; border-bottom: 2px solid var(--border); z-index: 10; }
+        td { padding: 8px 12px; border-bottom: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; }
+
+        /* Mode KPI Stack (Right side of middle) */
+        .mode-stack { display: flex; flex-direction: column; gap: 10px; height: 100%; }
+        .mode-card { flex: 1; display: flex; flex-direction: column; justify-content: center; background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); }
+
+        /* Charts */
+        .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; min-height: 320px; }
+        .chart-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; }
+        .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+
         /* Mobile Layout */
         @media (max-width: 1000px) {
             body { flex-direction: column; overflow: visible; height: 100%; }
             .sidebar { width: 100%; flex-direction: row; align-items: center; justify-content: space-between; border-right: none; border-bottom: 1px solid var(--border); padding: 10px 15px; position: sticky; top: 0; }
             .main { padding: 15px; overflow: visible; }
+            .middle-section { grid-template-columns: 1fr; }
+            .mode-stack { flex-direction: row; }
             .chart-row { grid-template-columns: 1fr; }
-            .full-width { grid-column: span 1; }
-            .upload-box { margin-bottom: 0; padding: 6px 12px; }
-            
-            /* Table specific mobile fix */
-            .table-wrapper { max-height: 400px; } /* Fixed height on mobile for scroll feel */
+            .table-wrapper { height: 300px; }
         }
 
         /* Loading */
@@ -127,7 +111,7 @@
 
 <main class="main" id="dashboard" style="display:none;">
 
-    <div class="section-head">System Energy</div>
+    <div class="section-head">System Overview</div>
     <div class="kpi-grid">
         <div class="kpi-card" style="border-left:4px solid var(--text-main);">
             <div class="kpi-title">Total Energy</div>
@@ -146,40 +130,43 @@
             <div><span class="kpi-val" id="val-duration">0h 0m</span></div>
         </div>
     </div>
-        <div class="section-head">Peak Events Log</div>
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Parameter</th>
-                    <th>Value</th>
-                    <th>Time</th>
-                    <th>Mode</th>
-                </tr>
-            </thead>
-            <tbody id="peak-table-body"></tbody>
-        </table>
-    </div>
-    
-    <div class="section-head">Mode Breakdown</div>
-    <div class="kpi-grid">
-        <div class="kpi-card" style="border-left:4px solid var(--c-field);">
-            <div class="kpi-title">Field Mode</div>
-            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-                <div><span class="kpi-val" id="val-field-wh">0.0</span><span class="kpi-unit">Wh</span></div>
-                <div style="font-weight:600; color:var(--text-sub);" id="val-field-time">0h 0m</div>
-            </div>
+
+    <div class="section-head" style="margin-top:10px;">Event & Mode Analysis</div>
+    <div class="middle-section">
+        
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Peak Event</th>
+                        <th>Value</th>
+                        <th>Time</th>
+                        <th>Mode</th>
+                    </tr>
+                </thead>
+                <tbody id="peak-table-body"></tbody>
+            </table>
         </div>
-        <div class="kpi-card" style="border-left:4px solid var(--c-travel);">
-            <div class="kpi-title">Travel Mode</div>
-            <div style="display:flex; justify-content:space-between; align-items:flex-end;">
-                <div><span class="kpi-val" id="val-travel-wh">0.0</span><span class="kpi-unit">Wh</span></div>
-                <div style="font-weight:600; color:var(--text-sub);" id="val-travel-time">0h 0m</div>
+
+        <div class="mode-stack">
+            <div class="mode-card" style="border-left:4px solid var(--c-field);">
+                <div class="kpi-title">Field Mode</div>
+                <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                    <div><span class="kpi-val" id="val-field-wh">0.0</span><span class="kpi-unit">Wh</span></div>
+                    <div style="font-weight:600; color:var(--text-sub);" id="val-field-time">0h 0m</div>
+                </div>
+            </div>
+            <div class="mode-card" style="border-left:4px solid var(--c-travel);">
+                <div class="kpi-title">Travel Mode</div>
+                <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                    <div><span class="kpi-val" id="val-travel-wh">0.0</span><span class="kpi-unit">Wh</span></div>
+                    <div style="font-weight:600; color:var(--text-sub);" id="val-travel-time">0h 0m</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="section-head">Visual Analysis</div>
+    <div class="section-head" style="margin-top:10px;">Visual Trends</div>
     <div class="chart-row">
         <div class="chart-card">
             <div class="chart-title">Cumulative Energy</div>
@@ -190,8 +177,7 @@
             <div id="chart-motor" style="flex:1;"></div>
         </div>
     </div>
-
-
+    
     <div style="height:20px;"></div>
 
 </main>
@@ -265,9 +251,9 @@
             
             const isField = parseInt(row[C.fld]) === 1;
             const mName = isField ? "Field" : "Travel";
-
             const tDisp = tStr.split(' ')[1] || tStr;
             const chk = (k, v) => { if(v > peaks[k].v) peaks[k] = {v:v, t:tDisp, m:mName}; };
+            
             chk('spd', S); chk('pwr', P); chk('amp', A); chk('mt', MT); chk('ct', CT);
 
             if(prevT) {
