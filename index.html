@@ -3,514 +3,465 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Traction Engineering Dashboard</title>
+    <title>Precision Traction Dashboard v4</title>
     
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
 
     <style>
+        /* --- GLOBAL RESET & THEME --- */
         :root {
-            --bg-app: #0b0c0e;
-            --bg-panel: #151719;
-            --border-color: #2b2f33;
-            --text-primary: #e6e6e6;
-            --text-secondary: #8c8c8c;
-            
-            /* Professional Data Colors */
-            --col-voltage: #26a69a; /* Teal */
-            --col-current: #ef5350; /* Red */
-            --col-power: #ffa726;   /* Orange */
-            --col-speed: #42a5f5;   /* Blue */
-            --col-temp: #ab47bc;    /* Purple */
-            --col-mode-1: #66bb6a;  /* Green */
-            --col-mode-2: #29b6f6;  /* Light Blue */
-            --col-mode-idle: #78909c; /* Grey */
+            --bg-body: #0b0c0e;
+            --bg-panel: #181b1f;
+            --border: #34373c;
+            --text-main: #e6e6e6;
+            --text-mute: #9fa6b2;
+            --accent: #3274d9;
+            --danger: #f2495c;
+            --success: #73bf69;
+            --warn: #ff9830;
         }
 
+        * { box-sizing: border-box; }
+
         body {
-            background-color: var(--bg-app);
-            color: var(--text-primary);
+            background-color: var(--bg-body);
+            color: var(--text-main);
             font-family: 'Inter', sans-serif;
             margin: 0;
             padding: 0;
-            overflow-x: hidden;
+            overflow-x: hidden; /* Prevent horizontal scroll on body */
+            width: 100vw;
         }
 
         /* --- HEADER --- */
-        header {
+        .navbar {
             background: var(--bg-panel);
-            border-bottom: 1px solid var(--border-color);
-            padding: 15px 30px;
+            border-bottom: 1px solid var(--border);
+            padding: 10px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: 60px;
+            width: 100%;
         }
-
-        .brand h1 {
-            font-size: 20px;
-            font-weight: 600;
-            margin: 0;
-            letter-spacing: 0.5px;
-        }
-        .brand span {
-            font-size: 12px;
-            color: var(--text-secondary);
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .controls button {
-            background: #2196f3;
-            border: none;
+        .navbar h1 { font-size: 18px; margin: 0; font-weight: 600; }
+        .upload-btn {
+            background: var(--accent);
             color: white;
+            border: none;
             padding: 8px 16px;
             border-radius: 4px;
-            font-weight: 600;
             cursor: pointer;
-            transition: opacity 0.2s;
+            font-size: 13px;
+            font-weight: 600;
         }
-        .controls button:hover { opacity: 0.9; }
-        input[type="file"] { display: none; }
+        .upload-btn:hover { background: #2860b2; }
 
-        /* --- GRID LAYOUT --- */
+        /* --- DASHBOARD GRID --- */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(12, 1fr);
+            grid-template-columns: repeat(12, 1fr); /* 12 Column Layout */
             gap: 15px;
-            padding: 20px;
-            max-width: 1800px;
-            margin: 0 auto;
-        }
-
-        .card {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
             padding: 15px;
-            position: relative;
+            width: 100%;
+            max-width: 100%;
         }
 
-        .card-header {
+        /* --- PANELS --- */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden; /* Contains chart overflow */
+        }
+        
+        .panel-header {
             font-size: 13px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
             font-weight: 600;
+            color: var(--text-mute);
+            text-transform: uppercase;
+            margin-bottom: 10px;
             display: flex;
             justify-content: space-between;
         }
 
-        /* --- METRICS (KPIs) --- */
-        .kpi-row { grid-column: span 12; display: grid; grid-template-columns: repeat(5, 1fr); gap: 15px; }
-        
-        .kpi-box {
-            background: var(--bg-panel);
-            border: 1px solid var(--border-color);
-            padding: 15px;
-            border-radius: 6px;
-            text-align: left;
-        }
-        .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 24px; font-weight: 700; margin-top: 5px; }
-        .kpi-unit { font-size: 12px; color: var(--text-secondary); margin-left: 4px; }
-        
-        /* --- CHARTS --- */
-        .chart-main { grid-column: span 12; height: 500px; }
-        .chart-half { grid-column: span 6; height: 350px; }
-        .chart-third { grid-column: span 4; height: 300px; }
+        /* --- SIZING CLASSES --- */
+        .full-width { grid-column: span 12; height: 450px; }
+        .half-width { grid-column: span 6; height: 400px; }
+        .kpi-box    { grid-column: span 2; height: 100px; }
 
-        /* --- PEAK TABLE --- */
-        .table-container {
+        /* Mobile Responsive */
+        @media (max-width: 1200px) {
+            .kpi-box { grid-column: span 4; }
+            .half-width { grid-column: span 12; }
+        }
+
+        /* --- KPI STYLES --- */
+        .kpi-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 22px;
+            font-weight: 700;
+            margin-top: auto;
+            color: var(--text-main);
+        }
+        .kpi-unit { font-size: 12px; color: var(--text-mute); }
+
+        /* --- PRECISION TABLE --- */
+        .table-wrap {
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+        }
+        table {
             width: 100%;
             border-collapse: collapse;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
+            font-size: 11px;
+            color: var(--text-main);
         }
-        .table-container th { text-align: left; color: var(--text-secondary); padding: 8px; border-bottom: 1px solid var(--border-color); }
-        .table-container td { padding: 8px; border-bottom: 1px solid #2b2f33; }
-        .val-highlight { color: var(--col-power); font-weight: bold; }
+        th {
+            text-align: left;
+            padding: 8px;
+            background: #22252b;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            border-bottom: 2px solid var(--border);
+        }
+        td {
+            padding: 6px 8px;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+        tr:hover td { background: #22252b; }
 
         /* --- LOADER --- */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(11, 12, 14, 0.95);
+            background: rgba(11,12,14,0.95);
             display: none;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            z-index: 999;
+            align-items: center;
+            flex-direction: column;
+            z-index: 2000;
+            color: var(--accent);
         }
-        .spinner {
-            width: 50px; height: 50px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-radius: 50%;
-            border-top-color: #2196f3;
-            animation: spin 0.8s ease-in-out infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        
-        /* --- SCROLLBAR --- */
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: var(--bg-app); }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #444; }
 
     </style>
 </head>
 <body>
 
-    <div id="loader">
-        <div class="spinner"></div>
-        <p style="margin-top:20px; color: #888;">Processing Large Dataset...</p>
+<div id="loader">
+    <h2>Processing Data...</h2>
+    <p>Parsing timestamps & calculating precision metrics</p>
+</div>
+
+<div class="navbar">
+    <h1>TRACTION LOG ANALYZER <span style="font-size:12px; color:#666; margin-left:10px;">v4.0 PRECISION</span></h1>
+    <div>
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">Upload CSV/Excel</button>
+        <input type="file" id="fileInput" accept=".csv, .xlsx" hidden>
+    </div>
+</div>
+
+<div class="grid-container" id="dashboard" style="display:none;">
+
+    <div class="panel kpi-box">
+        <div class="panel-header">Total Energy</div>
+        <div class="kpi-value" id="kpi-wh">0.0000</div>
+    </div>
+    <div class="panel kpi-box">
+        <div class="panel-header">Regen Energy</div>
+        <div class="kpi-value" id="kpi-regen" style="color: var(--success)">0.0000</div>
+    </div>
+    <div class="panel kpi-box">
+        <div class="panel-header">Idle Loss</div>
+        <div class="kpi-value" id="kpi-idle" style="color: var(--danger)">0.0000</div>
+    </div>
+    <div class="panel kpi-box">
+        <div class="panel-header">Peak Current</div>
+        <div class="kpi-value" id="kpi-curr">0.0000</div>
+    </div>
+    <div class="panel kpi-box">
+        <div class="panel-header">Peak Power</div>
+        <div class="kpi-value" id="kpi-pwr">0.0000</div>
+    </div>
+    <div class="panel kpi-box">
+        <div class="panel-header">Max Motor Temp</div>
+        <div class="kpi-value" id="kpi-temp">0.0000</div>
     </div>
 
-    <header>
-        <div class="brand">
-            <h1>Traction Analytics Pro</h1>
-            <span>CURTIS CONTROLLER LOG VISUALIZER</span>
-        </div>
-        <div class="controls">
-            <button onclick="document.getElementById('fileInput').click()">+ UPLOAD LOG FILE</button>
-            <input type="file" id="fileInput" accept=".csv, .xlsx" onchange="handleFileUpload(this)">
-        </div>
-    </header>
-
-    <div class="grid-container" id="dashboard" style="display:none;">
-
-        <div class="kpi-row">
-            <div class="kpi-box" style="border-left: 4px solid var(--col-power);">
-                <div class="card-header">Total Energy</div>
-                <div class="kpi-val" id="kpi-wh">0.0<span class="kpi-unit">kWh</span></div>
-            </div>
-            <div class="kpi-box" style="border-left: 4px solid var(--col-mode-1);">
-                <div class="card-header">Regen Recovered</div>
-                <div class="kpi-val" id="kpi-regen">0.0<span class="kpi-unit">Wh</span></div>
-            </div>
-            <div class="kpi-box" style="border-left: 4px solid var(--col-mode-idle);">
-                <div class="card-header">Idle Energy Loss</div>
-                <div class="kpi-val" id="kpi-idle">0.0<span class="kpi-unit">Wh</span></div>
-            </div>
-            <div class="kpi-box" style="border-left: 4px solid var(--col-current);">
-                <div class="card-header">Peak Current</div>
-                <div class="kpi-val" id="kpi-peak-curr">0.0<span class="kpi-unit">A</span></div>
-            </div>
-            <div class="kpi-box" style="border-left: 4px solid var(--col-temp);">
-                <div class="card-header">Peak Mtr Temp</div>
-                <div class="kpi-val" id="kpi-peak-temp">0.0<span class="kpi-unit">°C</span></div>
-            </div>
-        </div>
-
-        <div class="card chart-main">
-            <div class="card-header">
-                <span>System Performance Overview</span>
-                <span>Zoom Sync Enabled</span>
-            </div>
-            <div id="plot-combo" style="width:100%; height:100%;"></div>
-        </div>
-
-        <div class="card" style="grid-column: span 12; height: 180px;">
-            <div class="card-header">Travel Mode Timeline (State Analysis)</div>
-            <div id="plot-mode-strip" style="width:100%; height:100%;"></div>
-        </div>
-
-        <div class="card chart-half">
-            <div class="card-header">Electrical Characteristics (V vs I)</div>
-            <div id="plot-electrical" style="width:100%; height:100%;"></div>
-        </div>
-
-        <div class="card chart-half">
-            <div class="card-header">Peak Events Log</div>
-            <div style="overflow-y: auto; height: 90%;">
-                <table class="table-container">
-                    <thead>
-                        <tr>
-                            <th>Parameter</th>
-                            <th>Value</th>
-                            <th>Timestamp</th>
-                            <th>Travel Mode</th>
-                        </tr>
-                    </thead>
-                    <tbody id="peak-table-body">
-                        </tbody>
-                </table>
-            </div>
-        </div>
-
+    <div class="panel full-width">
+        <div class="panel-header">Power & Speed Analysis (Precision View)</div>
+        <div id="chart-main" style="width:100%; height:100%;"></div>
     </div>
 
-    <script>
-        // --- CONFIGURATION ---
-        const CONFIG = {
-            colors: {
-                power: '#ffa726',
-                speed: '#42a5f5',
-                voltage: '#26a69a',
-                current: '#ef5350',
-                temp: '#ab47bc'
+    <div class="panel half-width">
+        <div class="panel-header">Electrical (Voltage vs Current)</div>
+        <div id="chart-elec" style="width:100%; height:100%;"></div>
+    </div>
+
+    <div class="panel half-width">
+        <div class="panel-header">Peak Events Log (High Precision)</div>
+        <div class="table-wrap">
+            <table id="peak-table">
+                <thead>
+                    <tr>
+                        <th>Event Type</th>
+                        <th>Value</th>
+                        <th>Timestamp (HH:MM:ss.SSS)</th>
+                        <th>Travel Mode</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="panel full-width" style="height: 200px;">
+        <div class="panel-header">Travel Mode Timeline</div>
+        <div id="chart-modes" style="width:100%; height:100%;"></div>
+    </div>
+
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const loader = document.getElementById('loader');
+    const dashboard = document.getElementById('dashboard');
+
+    fileInput.addEventListener('change', handleFile);
+
+    function handleFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        loader.style.display = 'flex';
+        dashboard.style.display = 'none';
+
+        setTimeout(() => {
+            if (file.name.endsWith('.csv')) {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: (res) => processData(res.data)
+                });
+            } else {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:""});
+                    processData(json);
+                };
+                reader.readAsArrayBuffer(file);
             }
+        }, 100);
+    }
+
+    function processData(data) {
+        if (!data || data.length < 2) return alert("File empty");
+
+        // --- 1. COLUMN MAPPING ---
+        const keys = Object.keys(data[0]);
+        const find = (arr) => keys.find(k => arr.some(x => k.toLowerCase().includes(x)));
+
+        const C = {
+            time: find(['timestamp', 'time']),
+            spd: find(['speed']),
+            volt: find(['voltage', 'volts']),
+            amp: find(['current\na', 'current']),
+            pwr: find(['power']), // If exists, else calc
+            mode: find(['travel_mode', 'travel model']),
+            mTemp: find(['mtr_temp']),
+            cTemp: find(['ctrl_temp'])
         };
 
-        // --- FILE HANDLING ---
-        function handleFileUpload(input) {
-            const file = input.files[0];
-            if (!file) return;
+        // --- 2. VARIABLES ---
+        const traces = { time: [], spd: [], pwr: [], volt: [], amp: [], mode: [], mTemp: [] };
+        
+        let stats = {
+            wh: 0, regen: 0, idle: 0,
+            maxA: 0, maxW: 0, maxT: -99,
+            maxATime: '', maxWTime: '',
+            maxAMode: '', maxWMode: ''
+        };
 
-            document.getElementById('loader').style.display = 'flex';
-            document.getElementById('dashboard').style.display = 'none';
+        let prevTime = null;
 
-            // Use setTimeout to allow UI to render loader
-            setTimeout(() => {
-                if (file.name.endsWith('.csv')) {
-                    Papa.parse(file, {
-                        header: true,
-                        skipEmptyLines: true,
-                        complete: (results) => processData(results.data)
-                    });
-                } else {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const data = new Uint8Array(e.target.result);
-                        const wb = XLSX.read(data, {type: 'array'});
-                        const ws = wb.Sheets[wb.SheetNames[0]];
-                        const json = XLSX.utils.sheet_to_json(ws, {defval: ""});
-                        processData(json);
-                    };
-                    reader.readAsArrayBuffer(file);
-                }
-            }, 100);
-        }
+        // --- 3. LOOP ---
+        // Optimization: Render every Nth point if too large, but keep Peak precision
+        const step = data.length > 80000 ? 5 : 1; 
 
-        // --- DATA ENGINE ---
-        function processData(rawData) {
-            if (!rawData || rawData.length === 0) {
-                alert("File is empty");
-                return;
-            }
+        data.forEach((row, i) => {
+            // Raw Values
+            const tStr = row[C.time];
+            const S = parseFloat(row[C.spd]) || 0;
+            const V = parseFloat(row[C.volt]) || 0;
+            const A = parseFloat(row[C.amp]) || 0;
+            const M = row[C.mode] || "0";
+            const T = parseFloat(row[C.mTemp]) || 0;
+            
+            // Calc Power
+            const P = V * A;
 
-            // 1. Column Mapping (Intelligent Search)
-            const keys = Object.keys(rawData[0]);
-            const find = (snippets) => keys.find(k => snippets.some(s => k.toLowerCase().includes(s)));
+            // Date Parsing (Fix for Nanoseconds & White Background text)
+            // We strip nanoseconds for Date object, but keep string for display if needed
+            let jsDate;
+            try {
+                // Takes "2025-12-12 09:44:38.399..." -> "2025-12-12 09:44:38.399"
+                const cleanTime = tStr.length > 23 ? tStr.substring(0, 23) : tStr; 
+                jsDate = new Date(cleanTime);
+            } catch(e) { return; }
 
-            const cols = {
-                time: find(['timestamp', 'time']),
-                speed: find(['speed']),
-                voltage: find(['voltage', 'volts']),
-                current: find(['current\na', 'current']), // Prefer specific unit
-                power: find(['power']),
-                rpm: find(['rpm']),
-                mode: find(['travel_mode', 'travel model']),
-                mtr_temp: find(['mtr_temp']),
-                ctrl_temp: find(['ctrl_temp'])
-            };
+            if (isNaN(jsDate)) return;
 
-            // 2. High-Performance Loop
-            let totalWh = 0, totalRegen = 0, totalIdle = 0;
-            let peakCurr = 0, peakPower = 0, minVolt = 999;
-            let peakCurrTime = "", peakPowerTime = "", minVoltTime = "";
-            let peakCurrMode = "", peakPowerMode = "";
-            let maxMtrTemp = -99;
+            // --- STATISTICS ---
+            // Peaks
+            if (A > stats.maxA) { stats.maxA = A; stats.maxATime = tStr; stats.maxAMode = M; }
+            if (P > stats.maxW) { stats.maxW = P; stats.maxWTime = tStr; stats.maxWMode = M; }
+            if (T > stats.maxT) { stats.maxT = T; }
 
-            const timeData = [];
-            const speedData = [];
-            const powerData = [];
-            const voltageData = [];
-            const currentData = [];
-            const modeData = [];
-            const tempData = [];
-
-            let prevTime = null;
-
-            // Decimation factor for rendering speed (plot every Nth point if dataset > 50k)
-            const decimation = rawData.length > 50000 ? 5 : 1; 
-
-            for (let i = 0; i < rawData.length; i++) {
-                const row = rawData[i];
-                
-                // Parse Time (Handle Nanoseconds efficiently)
-                let tStr = row[cols.time];
-                if (!tStr) continue;
-                // Truncate nanoseconds (e.g., .123456789 -> .123) for JS Date
-                if (tStr.length > 26 && tStr.includes('.')) tStr = tStr.substring(0, 23) + 'Z'; 
-                const tDate = new Date(tStr);
-                if (isNaN(tDate)) continue;
-
-                // Values
-                const V = parseFloat(row[cols.voltage]) || 0;
-                const A = parseFloat(row[cols.current]) || 0;
-                const S = parseFloat(row[cols.speed]) || 0;
-                const M = row[cols.mode] || "0";
-                const T = parseFloat(row[cols.mtr_temp]) || 0;
-
-                // Calculated Power (Raw)
-                const P = V * A; 
-
-                // --- Analytics Logic ---
-                // 1. Peaks
-                if (A > peakCurr) { peakCurr = A; peakCurrTime = tStr; peakCurrMode = M; }
-                if (P > peakPower) { peakPower = P; peakPowerTime = tStr; peakPowerMode = M; }
-                if (V < minVolt && V > 5) { minVolt = V; minVoltTime = tStr; } // Ignore 0V off states
-                if (T > maxMtrTemp) maxMtrTemp = T;
-
-                // 2. Integration (Wh)
-                if (prevTime) {
-                    const dt = (tDate - prevTime) / 1000; // seconds
-                    if (dt > 0 && dt < 300) { // Limit huge gaps
-                        const energy = P * (dt / 3600); // Wh
-                        
-                        if (energy > 0) {
-                            totalWh += energy;
-                            // Idle Detection: Current flowing, but Speed ~ 0
-                            if (S < 1.0 && A > 2.0) totalIdle += energy; 
-                        } else {
-                            totalRegen += Math.abs(energy);
-                        }
+            // Energy Integration
+            if (prevTime) {
+                const dt = (jsDate - prevTime) / 1000; // seconds
+                if (dt > 0 && dt < 300) {
+                    const joules = P * dt;
+                    const wh = joules / 3600;
+                    
+                    if (wh > 0) {
+                        stats.wh += wh;
+                        // Idle Check: Speed < 1kmph but Power > 10W
+                        if (S < 1 && P > 10) stats.idle += wh;
+                    } else {
+                        stats.regen += Math.abs(wh);
                     }
                 }
-                prevTime = tDate;
+            }
+            prevTime = jsDate;
 
-                // --- Visualization Data Push (Decimated) ---
-                if (i % decimation === 0) {
-                    timeData.push(tStr);
-                    speedData.push(S);
-                    powerData.push(P);
-                    voltageData.push(V);
-                    currentData.push(A);
-                    modeData.push(M);
-                    tempData.push(T);
-                }
+            // --- PLOTTING DATA ---
+            if (i % step === 0) {
+                traces.time.push(jsDate.toISOString());
+                traces.spd.push(S);
+                traces.pwr.push(P);
+                traces.volt.push(V);
+                traces.amp.push(A);
+                traces.mode.push(M);
+                traces.mTemp.push(T);
+            }
+        });
+
+        // --- 4. RENDER ---
+        renderKPIs(stats);
+        renderCharts(traces);
+        renderTable(stats);
+
+        loader.style.display = 'none';
+        dashboard.style.display = 'grid';
+    }
+
+    // --- HELPER FUNCTIONS ---
+
+    function fmt(val, dec=6) {
+        return val.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+    }
+
+    function renderKPIs(s) {
+        document.getElementById('kpi-wh').innerHTML = fmt(s.wh, 4) + '<span class="kpi-unit"> Wh</span>';
+        document.getElementById('kpi-regen').innerHTML = fmt(s.regen, 4) + '<span class="kpi-unit"> Wh</span>';
+        document.getElementById('kpi-idle').innerHTML = fmt(s.idle, 4) + '<span class="kpi-unit"> Wh</span>';
+        document.getElementById('kpi-curr').innerHTML = fmt(s.maxA, 4) + '<span class="kpi-unit"> A</span>';
+        document.getElementById('kpi-pwr').innerHTML = fmt(s.maxW, 4) + '<span class="kpi-unit"> W</span>';
+        document.getElementById('kpi-temp').innerHTML = fmt(s.maxT, 2) + '<span class="kpi-unit"> °C</span>';
+    }
+
+    function renderTable(s) {
+        const tbody = document.querySelector('#peak-table tbody');
+        
+        const row = (label, val, unit, time, mode) => {
+            // Extract HH:MM:ss.SSS from timestamp string for cleaner display
+            let cleanTime = time.split(' ')[1] || time; 
+            // If it has long nanoseconds, truncate to 3 decimals
+            if(cleanTime.includes('.') && cleanTime.length > 12) {
+                 cleanTime = cleanTime.substring(0, 12); 
             }
 
-            // 3. Update UI Elements
-            updateKPIs(totalWh, totalRegen, totalIdle, peakCurr, maxMtrTemp);
-            updatePeakTable(peakCurr, peakCurrTime, peakCurrMode, peakPower, peakPowerTime, peakPowerMode, minVolt, minVoltTime);
-            renderCharts(timeData, speedData, powerData, voltageData, currentData, modeData, tempData);
+            return `<tr>
+                <td style="color:var(--accent); font-weight:bold;">${label}</td>
+                <td style="font-size:13px;">${fmt(val, 6)} ${unit}</td>
+                <td>${cleanTime}</td>
+                <td>Mode ${mode}</td>
+            </tr>`;
+        };
 
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'grid';
-        }
+        tbody.innerHTML = 
+            row("Max Current", s.maxA, "A", s.maxATime, s.maxAMode) +
+            row("Max Power", s.maxW, "W", s.maxWTime, s.maxWMode) +
+            row("Max Temp", s.maxT, "°C", s.maxATime, "-"); // Assuming max temp time aligns roughly
+    }
 
-        // --- UI FUNCTIONS ---
-        function updateKPIs(wh, regen, idle, peakA, peakT) {
-            document.getElementById('kpi-wh').innerHTML = (wh/1000).toFixed(2) + '<span class="kpi-unit">kWh</span>';
-            document.getElementById('kpi-regen').innerHTML = regen.toFixed(1) + '<span class="kpi-unit">Wh</span>';
-            document.getElementById('kpi-idle').innerHTML = idle.toFixed(1) + '<span class="kpi-unit">Wh</span>';
-            document.getElementById('kpi-peak-curr').innerHTML = peakA.toFixed(1) + '<span class="kpi-unit">A</span>';
-            document.getElementById('kpi-peak-temp').innerHTML = peakT.toFixed(1) + '<span class="kpi-unit">°C</span>';
-        }
+    function renderCharts(t) {
+        const baseLayout = {
+            paper_bgcolor: 'transparent',
+            plot_bgcolor: 'transparent',
+            font: { color: '#e6e6e6', family: 'Inter' },
+            xaxis: { gridcolor: '#333', zeroline: false },
+            yaxis: { gridcolor: '#333', zeroline: false },
+            margin: { t: 30, l: 50, r: 50, b: 40 },
+            hovermode: 'x unified',
+            showlegend: true,
+            legend: { orientation: 'h', y: 1.1 }
+        };
 
-        function updatePeakTable(maxA, timeA, modeA, maxW, timeW, modeW, minV, timeV) {
-            const tbody = document.getElementById('peak-table-body');
-            tbody.innerHTML = `
-                <tr>
-                    <td>Max Current</td>
-                    <td class="val-highlight">${maxA.toFixed(2)} A</td>
-                    <td>${timeA.split(' ')[1] || timeA}</td>
-                    <td>Mode ${modeA}</td>
-                </tr>
-                <tr>
-                    <td>Peak Power</td>
-                    <td class="val-highlight">${maxW.toFixed(2)} W</td>
-                    <td>${timeW.split(' ')[1] || timeW}</td>
-                    <td>Mode ${modeW}</td>
-                </tr>
-                <tr>
-                    <td>Min Voltage</td>
-                    <td class="val-highlight">${minV.toFixed(2)} V</td>
-                    <td>${timeV.split(' ')[1] || timeV}</td>
-                    <td>-</td>
-                </tr>
-            `;
-        }
+        const config = { responsive: true, displayModeBar: false };
 
-        function renderCharts(time, speed, power, voltage, current, mode, temp) {
-            const commonLayout = {
-                paper_bgcolor: 'transparent',
-                plot_bgcolor: 'transparent',
-                font: { color: '#e6e6e6', family: 'Inter' },
-                xaxis: { gridcolor: '#333', zerolinecolor: '#444' },
-                yaxis: { gridcolor: '#333', zerolinecolor: '#444' },
-                margin: { t: 30, l: 50, r: 50, b: 40 },
-                hovermode: 'x unified',
-                showlegend: true,
-                legend: { orientation: 'h', y: 1.1 }
-            };
+        // 1. MAIN CHART
+        Plotly.newPlot('chart-main', [
+            { x: t.time, y: t.pwr, name: 'Power (W)', type: 'scattergl', fill:'tozeroy', line: {color: '#ff9830', width:1} },
+            { x: t.time, y: t.spd, name: 'Speed (km/h)', yaxis: 'y2', type: 'scattergl', line: {color: '#3274d9', width:2} }
+        ], {
+            ...baseLayout,
+            yaxis: { title: 'Power (W)' },
+            yaxis2: { title: 'Speed (km/h)', overlaying: 'y', side: 'right' }
+        }, config);
 
-            // 1. Combo Chart (Power Area + Speed Line)
-            const tracePower = {
-                x: time, y: power, name: 'Power (W)',
-                type: 'scattergl', fill: 'tozeroy', 
-                line: { width: 0, color: CONFIG.colors.power },
-                fillcolor: 'rgba(255, 167, 38, 0.2)'
-            };
-            const traceSpeed = {
-                x: time, y: speed, name: 'Speed (km/h)',
-                type: 'scattergl', yaxis: 'y2',
-                line: { width: 2, color: CONFIG.colors.speed }
-            };
+        // 2. ELECTRICAL
+        Plotly.newPlot('chart-elec', [
+            { x: t.time, y: t.volt, name: 'Voltage (V)', type: 'scattergl', line: {color: '#73bf69'} },
+            { x: t.time, y: t.amp, name: 'Current (A)', yaxis: 'y2', type: 'scattergl', line: {color: '#f2495c'} }
+        ], {
+            ...baseLayout,
+            yaxis: { title: 'Voltage (V)' },
+            yaxis2: { title: 'Current (A)', overlaying: 'y', side: 'right' }
+        }, config);
 
-            Plotly.newPlot('plot-combo', [tracePower, traceSpeed], {
-                ...commonLayout,
-                yaxis: { title: 'Power (W)' },
-                yaxis2: { title: 'Speed (km/h)', overlaying: 'y', side: 'right' }
-            }, { responsive: true });
+        // 3. MODES STRIP (Heatmap style)
+        // Convert modes to numeric for heatmap color
+        const zData = t.mode.map(m => parseInt(m)||0);
+        Plotly.newPlot('chart-modes', [{
+            x: t.time,
+            y: t.mode, // Y is categorical
+            mode: 'markers',
+            type: 'scattergl',
+            marker: { 
+                color: zData, 
+                colorscale: 'Viridis',
+                size: 5,
+                symbol: 'square'
+            }
+        }], {
+            ...baseLayout,
+            yaxis: { title: 'Travel Mode', type: 'category' }
+        }, config);
+    }
+</script>
 
-            // 2. Travel Mode "State Strip"
-            // We convert mode data into a heatmap-like structure or step chart
-            // For best visuals, we use a scattergl with 'hv' shape (step) and color based on mode
-            const traceMode = {
-                x: time, y: mode,
-                type: 'scattergl',
-                mode: 'lines',
-                line: { shape: 'hv', width: 4 }, // Step chart
-                marker: { color: mode.map(m => m == 1 ? '#66bb6a' : '#29b6f6') }, // Dynamic coloring trick requires specific transform, simplified here to line
-                name: 'Travel Mode'
-            };
-            
-            // Better visual: A heatmap strip
-            // We map unique modes to integers for y-axis placement (all at y=1) and color by value
-            Plotly.newPlot('plot-mode-strip', [{
-                x: time,
-                y: mode,
-                type: 'scattergl',
-                mode: 'markers',
-                marker: { 
-                    symbol: 'square', 
-                    size: 8, // Make them look like a continuous block
-                    color: mode, 
-                    colorscale: 'Viridis', 
-                    showscale: false 
-                },
-                hoverinfo: 'x+y'
-            }], {
-                ...commonLayout,
-                yaxis: { title: 'Mode', dtick: 1 },
-                height: 180,
-                margin: { t: 10, b: 30, l: 50, r: 50 }
-            }, { responsive: true });
-
-            // 3. Electrical (V vs I)
-            const traceVolt = {
-                x: time, y: voltage, name: 'Voltage (V)',
-                type: 'scattergl', line: { color: CONFIG.colors.voltage, width: 1.5 }
-            };
-            const traceCurr = {
-                x: time, y: current, name: 'Current (A)',
-                yaxis: 'y2', type: 'scattergl', line: { color: CONFIG.colors.current, width: 1.5 }
-            };
-
-            Plotly.newPlot('plot-electrical', [traceVolt, traceCurr], {
-                ...commonLayout,
-                yaxis: { title: 'Voltage (V)' },
-                yaxis2: { title: 'Current (A)', overlaying: 'y', side: 'right' }
-            }, { responsive: true });
-
-            // Sync Zooms
-            const plots = ['plot-combo', 'plot-mode-strip', 'plot-electrical'];
-            // Manual sync logic not strictly required as Plotly aligns X dates well, 
-            // but ensuring all X-axes are date helps.
-        }
-    </script>
 </body>
 </html>
