@@ -3,58 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vehicle Traction Log Dashboard</title>
+    <title>Advanced Traction Telemetry Dashboard</title>
     
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
 
     <style>
         :root {
-            --bg-color: #1a1a1a;
-            --card-bg: #2d2d2d;
-            --text-color: #e0e0e0;
-            --accent-color: #4CAF50;
+            --bg-dark: #101215;      /* Grafana Dark BG */
+            --panel-bg: #181b1f;     /* Panel BG */
+            --border: #2c3235;
+            --text-main: #d5d5d5;
+            --text-muted: #8e8e8e;
+            --accent-orange: #ff9830;
+            --accent-green: #73bf69;
+            --accent-blue: #5794f2;
+            --accent-red: #f2495c;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
             margin: 0;
             padding: 20px;
+            overflow-x: hidden;
         }
 
-        .header {
+        /* --- Header & Upload --- */
+        .top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: var(--panel-bg);
+            padding: 15px 25px;
+            border-bottom: 2px solid var(--accent-blue);
             margin-bottom: 20px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #444;
+            border-radius: 4px;
         }
 
-        .header h1 { margin: 0; font-size: 24px; }
+        .title-group h1 { margin: 0; font-size: 22px; font-weight: 600; }
+        .title-group span { font-size: 12px; color: var(--text-muted); }
 
-        .file-upload-container {
+        .upload-btn-wrapper {
             position: relative;
             overflow: hidden;
             display: inline-block;
         }
 
         .btn {
-            border: 2px solid #444;
-            color: white;
-            background-color: var(--card-bg);
+            border: 1px solid var(--accent-blue);
+            color: var(--accent-blue);
+            background-color: rgba(87, 148, 242, 0.1);
             padding: 8px 20px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
         }
 
-        .btn:hover { background-color: var(--accent-color); border-color: var(--accent-color); }
+        .btn:hover { background-color: var(--accent-blue); color: white; }
 
         input[type=file] {
             font-size: 100px;
@@ -65,333 +76,422 @@
             cursor: pointer;
         }
 
-        /* Loading Spinner */
-        #loader {
-            display: none;
-            text-align: center;
-            margin: 20px;
-            font-size: 18px;
-            color: var(--accent-color);
-        }
-
-        /* KPI Cards */
-        .kpi-grid {
+        /* --- Layout Grid --- */
+        .dashboard-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 15px;
-            margin-bottom: 20px;
+            padding-bottom: 50px;
         }
 
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 15px;
+            position: relative;
+        }
+
+        .panel-header {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--accent-orange);
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* --- Metric Cards --- */
         .kpi-card {
-            background-color: var(--card-bg);
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            grid-column: span 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100px;
         }
 
-        .kpi-value { font-size: 24px; font-weight: bold; color: var(--accent-color); }
-        .kpi-label { font-size: 12px; color: #aaa; margin-top: 5px; text-transform: uppercase; }
+        .kpi-val { font-size: 28px; font-weight: 700; color: #fff; }
+        .kpi-unit { font-size: 14px; color: var(--text-muted); margin-left: 5px; }
+        .kpi-sub { font-size: 12px; color: var(--text-muted); margin-top: 5px; }
 
-        /* Charts Grid */
-        .charts-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
+        /* --- Chart Containers --- */
+        .chart-full { grid-column: span 4; height: 400px; }
+        .chart-half { grid-column: span 2; height: 350px; }
+        .chart-third { grid-column: span 1; height: 300px; } /* For pie/bar */
 
-        .chart-wrapper {
-            background-color: var(--card-bg);
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            height: 500px;
+        /* --- Loading State --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(16, 18, 21, 0.9);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
         }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.1);
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            border-left-color: var(--accent-blue);
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .loader-text { margin-top: 15px; color: var(--text-main); font-family: monospace; }
 
-        @media (min-width: 1200px) {
-            .charts-container { grid-template-columns: 1fr 1fr; }
-            .chart-wrapper.full-width { grid-column: span 2; }
-        }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Vehicle Traction Analytics</h1>
-        <div class="file-upload-container">
-            <button class="btn">📂 Upload CSV / Excel</button>
-            <input type="file" id="fileInput" accept=".csv, .xlsx, .xls" />
-        </div>
+<div id="loader">
+    <div class="spinner"></div>
+    <div class="loader-text" id="loaderMsg">Initializing...</div>
+</div>
+
+<div class="top-bar">
+    <div class="title-group">
+        <h1>Vehicle Telemetry Analytics</h1>
+        <span>Calculates Wh, Intervals, and Idle Power from Raw Logs</span>
+    </div>
+    <div class="upload-btn-wrapper">
+        <button class="btn">Upload RAW Log (.csv / .xlsx)</button>
+        <input type="file" id="fileInput" accept=".csv, .xlsx, .xls" />
+    </div>
+</div>
+
+<div class="dashboard-grid" id="mainDashboard" style="display:none;">
+    
+    <div class="panel kpi-card">
+        <div class="panel-header">Total Energy Consumed</div>
+        <div><span class="kpi-val" id="val-total-wh">0</span><span class="kpi-unit">Wh</span></div>
+    </div>
+    <div class="panel kpi-card">
+        <div class="panel-header">Regenerated Energy</div>
+        <div><span class="kpi-val" id="val-regen" style="color: var(--accent-green);">0</span><span class="kpi-unit">Wh</span></div>
+    </div>
+    <div class="panel kpi-card">
+        <div class="panel-header">Idle Energy Loss</div>
+        <div><span class="kpi-val" id="val-idle" style="color: var(--accent-red);">0</span><span class="kpi-unit">Wh</span></div>
+        <div class="kpi-sub">Vehicle Stationary but On</div>
+    </div>
+    <div class="panel kpi-card">
+        <div class="panel-header">Duration</div>
+        <div><span class="kpi-val" id="val-duration">0</span><span class="kpi-unit">Hrs</span></div>
     </div>
 
-    <div id="loader">Processing Data... Please wait.</div>
-
-    <div id="dashboard" style="display: none;">
-        <div class="kpi-grid" id="kpiContainer"></div>
-
-        <div class="charts-container">
-            <div class="chart-wrapper full-width" id="chart-performance"></div>
-            
-            <div class="chart-wrapper" id="chart-electrical"></div>
-            
-            <div class="chart-wrapper" id="chart-thermal"></div>
-            
-            <div class="chart-wrapper full-width" id="chart-status"></div>
-        </div>
+    <div class="panel chart-full">
+        <div class="panel-header">Instantaneous Power & Speed</div>
+        <div id="plot-power"></div>
     </div>
 
-    <script>
-        const fileInput = document.getElementById('fileInput');
-        const loader = document.getElementById('loader');
-        const dashboard = document.getElementById('dashboard');
+    <div class="panel chart-half">
+        <div class="panel-header">Total Wh by Travel Mode</div>
+        <div id="plot-modes"></div>
+    </div>
 
-        fileInput.addEventListener('change', handleFile, false);
+    <div class="panel chart-half">
+        <div class="panel-header">Voltage vs Current (Scatter)</div>
+        <div id="plot-electrical"></div>
+    </div>
 
-        function handleFile(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+    <div class="panel chart-full">
+        <div class="panel-header">Component Temperatures</div>
+        <div id="plot-thermal"></div>
+    </div>
 
-            dashboard.style.display = 'none';
-            loader.style.display = 'block';
-            loader.innerText = `Reading ${file.name}...`;
+</div>
 
-            // Small timeout to allow UI to update
-            setTimeout(() => {
-                if (file.name.endsWith('.csv')) {
-                    parseCSV(file);
-                } else if (file.name.match(/\.xlsx?$/)) {
-                    parseExcel(file);
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const loader = document.getElementById('loader');
+    const loaderMsg = document.getElementById('loaderMsg');
+    const dashboard = document.getElementById('mainDashboard');
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        showLoader(`Reading ${file.name}...`);
+        
+        // Small delay to let UI render loader
+        setTimeout(() => {
+            if (file.name.endsWith('.csv')) parseCSV(file);
+            else parseExcel(file);
+        }, 50);
+    });
+
+    function showLoader(msg) {
+        dashboard.style.display = 'none';
+        loader.style.display = 'flex';
+        loaderMsg.innerText = msg;
+    }
+
+    function parseCSV(file) {
+        Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            chunkSize: 1024 * 1024 * 5, // Chunk to prevent crash on huge files
+            complete: (results) => processData(results.data),
+            error: (err) => alert("CSV Error: " + err.message)
+        });
+    }
+
+    function parseExcel(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
+            processData(jsonData);
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // --- High Performance Date Parser ---
+    // Handles nanoseconds "2025-12-12 09:44:38.399450064+05:30" by trimming
+    function fastDateParse(timeStr) {
+        if (!timeStr) return null;
+        if (typeof timeStr !== 'string') return new Date(timeStr); 
+        
+        // Optimize: If ISO string is too long (nanoseconds), trim to milliseconds (23 chars)
+        // Example: 2025-12-12T09:44:38.399... -> we want 2025-12-12T09:44:38.399
+        // Regex replacement is slower than substring inside a loop of 100k
+        let cleanStr = timeStr;
+        
+        // Heuristic: If it has a dot and is very long, likely nanoseconds
+        if (timeStr.length > 29 && timeStr.includes('.')) {
+             // Find position of dot
+             const dotIdx = timeStr.indexOf('.');
+             // Keep dot + 3 digits (ms) + timezone part if exists
+             // Simplified: Just pass to Date() if browser supports, but many don't support nano
+             // Strategy: Replace the fractional part with just 3 digits
+             cleanStr = timeStr.replace(/(\.\d{3})\d+/, '$1'); 
+        }
+        
+        return new Date(cleanStr);
+    }
+
+    function processData(rawData) {
+        showLoader("Calculating Intervals & Wh...");
+        
+        setTimeout(() => {
+            runCalculations(rawData);
+        }, 50);
+    }
+
+    function runCalculations(data) {
+        if (!data || data.length < 2) {
+            alert("Not enough data.");
+            return;
+        }
+
+        // 1. Column Mapping (Flexible Search)
+        const keys = Object.keys(data[0]);
+        const findCol = (terms) => keys.find(k => terms.some(t => k.toLowerCase().includes(t)));
+
+        const colMap = {
+            time: findCol(['timestamp', 'time']),
+            voltage: findCol(['voltage', 'volts']),
+            current: findCol(['current\na', 'current']), // prioritizing unit specific
+            speed: findCol(['speed']),
+            mode: findCol(['travel_mode', 'travel model']),
+            rpm: findCol(['rpm']),
+            ctrl_temp: findCol(['ctrl_temp']),
+            mtr_temp: findCol(['mtr_temp'])
+        };
+
+        // 2. Main Loop - Calculate derived metrics
+        const processed = {
+            time: [],
+            wh_inst: [],
+            wh_accum: [],
+            power: [],
+            speed: [],
+            mode: [],
+            voltage: [],
+            current: [],
+            ctrl_temp: [],
+            mtr_temp: [],
+            is_idle: []
+        };
+
+        let totalWh = 0;
+        let totalRegen = 0;
+        let totalIdleWh = 0;
+        let prevTime = fastDateParse(data[0][colMap.time]);
+        
+        // Mode Aggregation
+        const modeWh = {};
+
+        for (let i = 0; i < data.length; i++) {
+            const row = data[i];
+            const currTime = fastDateParse(row[colMap.time]);
+            
+            // Skip invalid times
+            if (!currTime || isNaN(currTime)) continue;
+
+            // Calculate Interval (Seconds)
+            let dt = (currTime - prevTime) / 1000; 
+            if (dt < 0) dt = 0; // Prevent negative jumps
+            if (dt > 300) dt = 0; // Ignore massive gaps > 5 mins (logger off)
+
+            // Extract Values
+            const V = parseFloat(row[colMap.voltage]) || 0;
+            const A = parseFloat(row[colMap.current]) || 0;
+            const S = parseFloat(row[colMap.speed]) || 0;
+            const M = row[colMap.mode] || "0";
+
+            // Power (W)
+            const P = V * A;
+
+            // Energy (Wh) = P (W) * (dt / 3600 h)
+            const wh = P * (dt / 3600);
+
+            // Logic: Total vs Regen vs Idle
+            if (wh > 0) {
+                totalWh += wh;
+                // Check Idle: Speed is ~0 but consuming Power
+                if (S < 0.5 && A > 1) {
+                    totalIdleWh += wh;
+                    processed.is_idle.push(1);
                 } else {
-                    alert('Please upload a CSV or Excel file.');
-                    loader.style.display = 'none';
+                    processed.is_idle.push(0);
                 }
-            }, 100);
-        }
+                
+                // Add to Mode Bucket
+                modeWh[M] = (modeWh[M] || 0) + wh;
 
-        function parseCSV(file) {
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    processData(results.data);
-                }
-            });
-        }
-
-        function parseExcel(file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {defval: ""});
-                processData(jsonData);
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function cleanColumnName(name) {
-            // Remove units like \nkmph, \nV, \nA, trim spaces
-            return name.split('\n')[0].trim();
-        }
-
-        function processData(rawData) {
-            loader.innerText = "Processing " + rawData.length + " rows...";
-            
-            // 1. Identify Columns & Clean Keys
-            if (rawData.length === 0) return;
-            
-            // Map raw keys to clean keys
-            const rawKeys = Object.keys(rawData[0]);
-            const keyMap = {}; // raw -> clean
-            
-            // Helper to find best matching key
-            function findKey(keywords) {
-                return rawKeys.find(k => {
-                    const clean = k.toLowerCase();
-                    return keywords.some(w => clean.includes(w));
-                });
+            } else {
+                totalRegen += Math.abs(wh); // Store as positive for display
+                processed.is_idle.push(0);
             }
 
-            // Mappings based on your file structure
-            const colMap = {
-                time: findKey(['timestamp', 'time']),
-                speed: findKey(['speed']),
-                rpm: findKey(['rpm', 'motor_rpm']),
-                voltage: findKey(['voltage', 'volts']),
-                current: findKey(['current\na', 'current']), // Specific check to avoid RMS currents
-                rms_current: findKey(['rms']),
-                ctrl_temp: findKey(['ctrl_temp', 'controller']),
-                mtr_temp: findKey(['mtr_temp', 'motor_temp']),
-                throttle: findKey(['acceleration']),
-                eff: findKey(['eff']),
-                cutback: findKey(['overall_cutback']),
-                power: findKey(['power'])
-            };
+            // Push to arrays for plotting
+            processed.time.push(currTime.toISOString());
+            processed.power.push(P);
+            processed.speed.push(S);
+            processed.voltage.push(V);
+            processed.current.push(A);
+            processed.mode.push(M);
+            processed.ctrl_temp.push(parseFloat(row[colMap.ctrl_temp]) || 0);
+            processed.mtr_temp.push(parseFloat(row[colMap.mtr_temp]) || 0);
 
-            // 2. Extract Data Arrays (Column-oriented for Plotly)
-            const traces = {
-                time: [], speed: [], rpm: [], voltage: [], current: [],
-                ctrl_temp: [], mtr_temp: [], eff: [], cutback: [], power: []
-            };
-
-            // Statistics
-            let maxSpeed = 0, maxCurrent = 0, minVolts = 999, maxCtrlTemp = -999, maxMtrTemp = -999;
-
-            rawData.forEach(row => {
-                // Parse Time
-                let t = row[colMap.time];
-                // Handle high precision timestamps by truncation if necessary, though Plotly handles ISO strings well.
-                traces.time.push(t);
-
-                // Helper to parse float safely
-                const v = (key) => {
-                    const val = parseFloat(row[key]);
-                    return isNaN(val) ? 0 : val;
-                };
-
-                const s = v(colMap.speed);
-                const r = v(colMap.rpm);
-                const volt = v(colMap.voltage);
-                const curr = v(colMap.current); // Use the specific "Current A" column
-                const ct = v(colMap.ctrl_temp);
-                const mt = v(colMap.mtr_temp);
-
-                traces.speed.push(s);
-                traces.rpm.push(r);
-                traces.voltage.push(volt);
-                traces.current.push(curr);
-                traces.ctrl_temp.push(ct);
-                traces.mtr_temp.push(mt);
-                traces.eff.push(v(colMap.eff));
-                traces.cutback.push(v(colMap.cutback));
-                traces.power.push(v(colMap.power));
-
-                // Stats calculation
-                if (s > maxSpeed) maxSpeed = s;
-                if (curr > maxCurrent) maxCurrent = curr;
-                if (volt < minVolts && volt > 10) minVolts = volt; // Ignore 0v spikes
-                if (ct > maxCtrlTemp) maxCtrlTemp = ct;
-                if (mt > maxMtrTemp) maxMtrTemp = mt;
-            });
-
-            // 3. Render KPIs
-            renderKPIs({
-                "Max Speed": maxSpeed.toFixed(1) + " km/h",
-                "Max Current": maxCurrent.toFixed(1) + " A",
-                "Min Voltage": minVolts.toFixed(1) + " V",
-                "Peak Ctrl Temp": maxCtrlTemp.toFixed(1) + " °C",
-                "Peak Mtr Temp": maxMtrTemp.toFixed(1) + " °C",
-                "Total Rows": rawData.length.toLocaleString()
-            });
-
-            // 4. Render Charts
-            renderCharts(traces);
-
-            loader.style.display = 'none';
-            dashboard.style.display = 'block';
+            prevTime = currTime;
         }
 
-        function renderKPIs(metrics) {
-            const container = document.getElementById('kpiContainer');
-            container.innerHTML = '';
-            for (const [label, value] of Object.entries(metrics)) {
-                const card = document.createElement('div');
-                card.className = 'kpi-card';
-                card.innerHTML = `<div class="kpi-value">${value}</div><div class="kpi-label">${label}</div>`;
-                container.appendChild(card);
+        const totalTimeHrs = (new Date(processed.time[processed.time.length-1]) - new Date(processed.time[0])) / 3600000;
+
+        // 3. Update DOM
+        updateKPIs({
+            totalWh, totalRegen, totalIdleWh, totalTimeHrs
+        });
+
+        renderCharts(processed, modeWh);
+        
+        loader.style.display = 'none';
+        dashboard.style.display = 'grid';
+    }
+
+    function updateKPIs(stats) {
+        // Animate numbers
+        document.getElementById('val-total-wh').innerText = stats.totalWh.toLocaleString(undefined, {maximumFractionDigits: 1});
+        document.getElementById('val-regen').innerText = stats.totalRegen.toLocaleString(undefined, {maximumFractionDigits: 1});
+        document.getElementById('val-idle').innerText = stats.totalIdleWh.toLocaleString(undefined, {maximumFractionDigits: 2});
+        
+        // Calculate HH:MM for duration
+        const h = Math.floor(stats.totalTimeHrs);
+        const m = Math.round((stats.totalTimeHrs - h) * 60);
+        document.getElementById('val-duration').innerText = `${h}h ${m}m`;
+    }
+
+    function renderCharts(data, modeWh) {
+        const commonLayout = {
+            paper_bgcolor: 'transparent',
+            plot_bgcolor: 'transparent',
+            font: { color: '#d5d5d5', family: 'Inter, sans-serif' },
+            xaxis: { gridcolor: '#2c3235', showgrid: true, zeroline: false },
+            yaxis: { gridcolor: '#2c3235', showgrid: true, zeroline: false },
+            margin: { t: 30, r: 40, l: 50, b: 40 },
+            showlegend: true,
+            legend: { orientation: 'h', y: 1.1, x: 0 },
+            hovermode: 'x unified'
+        };
+
+        const config = { responsive: true, displayModeBar: true };
+
+        // 1. Power & Speed (Dual Axis)
+        Plotly.newPlot('plot-power', [
+            {
+                x: data.time, y: data.power, name: 'Power (W)',
+                type: 'scattergl', line: { color: '#ff9830', width: 1.5 },
+                fill: 'tozeroy'
+            },
+            {
+                x: data.time, y: data.speed, name: 'Speed (kmph)',
+                yaxis: 'y2', type: 'scattergl', line: { color: '#5794f2', width: 1.5 }
             }
-        }
+        ], {
+            ...commonLayout,
+            yaxis: { title: 'Power (Watts)' },
+            yaxis2: { title: 'Speed (kmph)', overlaying: 'y', side: 'right', showgrid: false }
+        }, config);
 
-        function renderCharts(data) {
-            const commonLayout = {
-                paper_bgcolor: '#2d2d2d',
-                plot_bgcolor: '#2d2d2d',
-                font: { color: '#e0e0e0' },
-                xaxis: { gridcolor: '#444' },
-                yaxis: { gridcolor: '#444' },
-                margin: { t: 40, r: 50, l: 50, b: 40 },
-                hovermode: 'x unified',
-                showlegend: true,
-                legend: { orientation: 'h', y: 1.1 }
-            };
+        // 2. Mode Breakdown (Bar Chart)
+        const modeLabels = Object.keys(modeWh).map(k => `Mode ${k}`);
+        const modeValues = Object.values(modeWh);
+        
+        Plotly.newPlot('plot-modes', [{
+            x: modeLabels, y: modeValues,
+            type: 'bar',
+            marker: { color: ['#5794f2', '#73bf69', '#ff9830', '#f2495c', '#b877d9'] }
+        }], {
+            ...commonLayout,
+            margin: { t: 20, r: 20, l: 40, b: 30 },
+            yaxis: { title: 'Energy (Wh)' }
+        }, config);
 
-            const config = { responsive: true, displayModeBar: true };
+        // 3. Electrical (Scatter Voltage vs Current)
+        // We use downsampling for scatter if > 10k points to keep it snappy
+        const step = Math.ceil(data.time.length / 5000); 
+        const vSample = data.voltage.filter((_,i) => i % step === 0);
+        const cSample = data.current.filter((_,i) => i % step === 0);
 
-            // Chart 1: Performance (Speed & RPM)
-            Plotly.newPlot('chart-performance', [
-                {
-                    x: data.time, y: data.speed, name: 'Speed (kmph)',
-                    type: 'scattergl', line: { width: 2, color: '#00d2ff' }
-                },
-                {
-                    x: data.time, y: data.rpm, name: 'Motor RPM',
-                    yaxis: 'y2', type: 'scattergl', line: { width: 1, color: '#ffeb3b' }
-                }
-            ], {
-                ...commonLayout,
-                title: 'Vehicle Performance',
-                yaxis: { title: 'Speed (kmph)', gridcolor: '#444' },
-                yaxis2: {
-                    title: 'RPM', overlaying: 'y', side: 'right',
-                    gridcolor: '#444', showgrid: false
-                }
-            }, config);
+        Plotly.newPlot('plot-electrical', [{
+            x: cSample, y: vSample,
+            mode: 'markers',
+            type: 'scattergl',
+            marker: { size: 3, color: cSample, colorscale: 'Viridis', showscale: true },
+            name: 'V vs I'
+        }], {
+            ...commonLayout,
+            xaxis: { title: 'Current (A)', gridcolor: '#2c3235' },
+            yaxis: { title: 'Voltage (V)', gridcolor: '#2c3235' },
+            hovermode: 'closest'
+        }, config);
 
-            // Chart 2: Electrical
-            Plotly.newPlot('chart-electrical', [
-                {
-                    x: data.time, y: data.voltage, name: 'Voltage (V)',
-                    type: 'scattergl', line: { color: '#4CAF50' }
-                },
-                {
-                    x: data.time, y: data.current, name: 'Current (A)',
-                    yaxis: 'y2', type: 'scattergl', line: { color: '#f44336' }
-                }
-            ], {
-                ...commonLayout,
-                title: 'Electrical System',
-                yaxis: { title: 'Voltage (V)', gridcolor: '#444' },
-                yaxis2: { title: 'Current (A)', overlaying: 'y', side: 'right', showgrid: false }
-            }, config);
+        // 4. Thermal
+        Plotly.newPlot('plot-thermal', [
+            {
+                x: data.time, y: data.ctrl_temp, name: 'Controller °C',
+                type: 'scattergl', line: { color: '#73bf69' }
+            },
+            {
+                x: data.time, y: data.mtr_temp, name: 'Motor °C',
+                type: 'scattergl', line: { color: '#f2495c' }
+            }
+        ], {
+            ...commonLayout,
+            yaxis: { title: 'Temperature (°C)' }
+        }, config);
+        
+        // Setup Syncing
+        const plots = ['plot-power', 'plot-thermal'];
+        // Note: Plotly JS syncs mainly via group, but manual event handling can be added if needed. 
+        // Default 'x unified' hover helps correlation.
+    }
+</script>
 
-            // Chart 3: Thermal
-            Plotly.newPlot('chart-thermal', [
-                {
-                    x: data.time, y: data.ctrl_temp, name: 'Controller Temp',
-                    type: 'scattergl', line: { color: '#ff9800' }
-                },
-                {
-                    x: data.time, y: data.mtr_temp, name: 'Motor Temp',
-                    type: 'scattergl', line: { color: '#e91e63' }
-                }
-            ], {
-                ...commonLayout,
-                title: 'Thermal Status (°C)',
-                yaxis: { title: 'Temperature (°C)', gridcolor: '#444' }
-            }, config);
-
-            // Chart 4: Status & Cutbacks
-            Plotly.newPlot('chart-status', [
-                {
-                    x: data.time, y: data.eff, name: 'Efficiency %',
-                    type: 'scattergl', fill: 'tozeroy', line: { color: '#8bc34a', width: 1 }
-                },
-                {
-                    x: data.time, y: data.cutback, name: 'Overall Cutback %',
-                    type: 'scattergl', line: { color: '#ff5722', width: 2 }
-                },
-                 {
-                    x: data.time, y: data.power, name: 'Power (W)',
-                    yaxis: 'y2', type: 'scattergl', visible: 'legendonly', line: { color: '#9c27b0' }
-                }
-            ], {
-                ...commonLayout,
-                title: 'Efficiency & Cutbacks',
-                yaxis: { title: 'Percentage (%)', range: [0, 110], gridcolor: '#444' },
-                yaxis2: { title: 'Power (W)', overlaying: 'y', side: 'right', showgrid: false }
-            }, config);
-        }
-    </script>
 </body>
 </html>
