@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nandi Curtis Analytics | v10</title>
+    <title>Nandi Curtis Analytics</title>
     
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -32,7 +32,7 @@
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-primary); display: flex; height: 100vh; overflow: hidden; }
 
         /* Sidebar */
-        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; z-index: 20; }
+        .sidebar { width: 260px; background: var(--bg-side); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; z-index: 20; flex-shrink: 0; }
         .brand { font-size: 18px; font-weight: 800; margin-bottom: 25px; display: flex; align-items: center; gap: 8px; color: var(--text-primary); }
         .brand span { color: var(--accent); }
         
@@ -43,7 +43,7 @@
         .theme-toggle { margin-top: auto; padding: 10px; background: var(--bg-body); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; color: var(--text-primary); font-weight: 600; }
 
         /* Main Dashboard */
-        .main { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 25px; }
+        .main { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 25px; position: relative; }
         
         /* Section Headers */
         .section-head { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-secondary); margin-bottom: 10px; border-left: 3px solid var(--accent); padding-left: 10px; }
@@ -58,14 +58,23 @@
 
         /* Charts */
         .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-height: 350px; }
-        .chart-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 15px; display: flex; flex-direction: column; }
+        .chart-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 15px; display: flex; flex-direction: column; min-height: 350px; }
         .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 10px; color: var(--text-primary); }
         .full-width { grid-column: span 2; height: 400px; }
 
-        /* Table */
-        .table-container { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card); }
+        /* Table - FIXED VISIBILITY */
+        .table-container { 
+            overflow-x: auto; 
+            overflow-y: auto; 
+            border: 1px solid var(--border); 
+            border-radius: 8px; 
+            background: var(--bg-card);
+            max-height: 500px; /* Ensure it doesn't expand infinitely */
+            display: block;    /* Force display */
+            width: 100%;
+        }
         table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px; }
-        th { background: var(--bg-body); text-align: left; padding: 12px 15px; color: var(--text-secondary); font-weight: 600; border-bottom: 1px solid var(--border); }
+        th { background: var(--bg-body); text-align: left; padding: 12px 15px; color: var(--text-secondary); font-weight: 600; border-bottom: 1px solid var(--border); position: sticky; top: 0; }
         td { padding: 12px 15px; border-bottom: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; color: var(--text-primary); }
         tr:last-child td { border-bottom: none; }
 
@@ -78,7 +87,7 @@
         @media (max-width: 1000px) {
             body { flex-direction: column; height: auto; overflow: visible; }
             .sidebar { width: 100%; height: auto; flex-direction: row; align-items: center; justify-content: space-between; padding: 15px; border-right: none; border-bottom: 1px solid var(--border); position: sticky; top: 0; }
-            .brand { margin-bottom: 0; }
+            .brand { margin-bottom: 0; font-size: 16px; }
             .chart-row { grid-template-columns: 1fr; }
             .full-width { grid-column: span 1; }
             .upload-box { margin-bottom: 0; padding: 8px 15px; display: flex; align-items: center; gap: 10px; }
@@ -91,13 +100,12 @@
 
     <div id="loader">
         <div class="spinner"></div>
-        <div style="margin-top:15px; font-weight:600;">Processing Precision Data...</div>
+        <div style="margin-top:15px; font-weight:600;">Processing Data...</div>
     </div>
 
     <aside class="sidebar">
         <div class="brand">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-            CURTIS<span>PRO</span>
+            Nandi Curtis <span style="font-size: 20px;">⚡</span>
         </div>
         
         <label class="upload-box">
@@ -108,7 +116,7 @@
         <button class="theme-toggle" onclick="toggleTheme()">🌗 Switch Theme</button>
         
         <div id="file-meta" style="margin-top:20px; font-size:11px; color:var(--text-secondary);">
-            v10.0 Precision Build<br>Ready for analysis.
+            v11.0 Stable<br>Ready for analysis.
         </div>
     </aside>
 
@@ -195,6 +203,8 @@
                     </tbody>
             </table>
         </div>
+        
+        <div style="height: 50px;"></div>
 
     </main>
 
@@ -231,7 +241,10 @@
 
         // --- DATA PROCESSING ---
         function process(data) {
-            if(!data || data.length < 5) return alert("File empty or invalid.");
+            if(!data || data.length < 5) {
+                document.getElementById('loader').style.display = 'none';
+                return alert("File empty or invalid.");
+            }
 
             // 1. Map Columns
             const keys = Object.keys(data[0]);
@@ -316,7 +329,7 @@
                                 if(S > 0.5) { stats.whTravel += wh; runT += wh; }
                             }
 
-                            // Idle Logic (Your specific requirement: Stationary but On)
+                            // Idle Logic (Stationary but On)
                             if(S < 0.1 && P > 0) stats.whIdle += wh;
 
                         } else {
