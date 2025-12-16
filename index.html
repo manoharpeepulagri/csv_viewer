@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#ffffff" id="theme-color-meta">
-    <title>Traction Analytics Mobile</title>
+    <meta name="theme-color" content="#ffffff">
+    <title>Nandi Curtis Analytics</title>
     
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -13,405 +13,340 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 
     <style>
-        /* --- THEME & RESET --- */
+        /* --- THEME --- */
         :root {
-            --bg-body: #f4f6f8;
+            --bg-body: #f8f9fa;
             --bg-card: #ffffff;
             --bg-nav: #ffffff;
-            --text-main: #2d3748;
+            --text-main: #1a202c;
             --text-sub: #718096;
             --border: #e2e8f0;
-            --shadow: 0 1px 3px rgba(0,0,0,0.1);
             --accent: #3182ce;
+            
+            --col-travel: #3182ce; /* Blue */
+            --col-field: #d69e2e;  /* Yellow/Orange */
+            --col-regen: #48bb78;  /* Green */
+            --col-idle: #e53e3e;   /* Red */
         }
 
         [data-theme="dark"] {
-            --bg-body: #1a202c;
+            --bg-body: #171923;
             --bg-card: #2d3748;
             --bg-nav: #2d3748;
-            --text-main: #edf2f7;
+            --text-main: #f7fafc;
             --text-sub: #a0aec0;
             --border: #4a5568;
-            --shadow: 0 4px 6px rgba(0,0,0,0.3);
             --accent: #63b3ed;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
 
-        body {
-            margin: 0;
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            display: flex;
-            height: 100vh;
-            overflow: hidden; /* Desktop default */
-        }
-
-        /* --- NAV / SIDEBAR --- */
+        /* --- LAYOUT --- */
         .nav-panel {
-            width: 260px;
-            background: var(--bg-nav);
-            border-right: 1px solid var(--border);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            z-index: 100;
-            transition: all 0.3s ease;
+            width: 250px; background: var(--bg-nav); border-right: 1px solid var(--border);
+            padding: 20px; display: flex; flex-direction: column; z-index: 50;
         }
+        .main-content { flex: 1; padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-        .brand {
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 30px;
-        }
+        /* --- COMPONENTS --- */
+        .brand { font-size: 18px; font-weight: 800; margin-bottom: 25px; display: flex; align-items: center; gap: 8px; }
         .brand span { color: var(--accent); }
-
-        .controls { display: flex; flex-direction: column; gap: 10px; }
         
         .btn {
-            background: var(--bg-body);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 14px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
+            background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main);
+            padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;
         }
-        .btn-primary { background: var(--accent); color: white; border: none; }
+        .btn-primary { background: var(--accent); color: #fff; border: none; }
 
-        /* --- MAIN CONTENT --- */
-        .main-content {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch; /* Smooth scroll iOS */
-        }
-
-        /* --- GRID & CARDS --- */
-        .grid-kpi {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .card {
-            background: var(--bg-card);
-            border-radius: 12px;
-            padding: 16px;
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-        }
-
-        .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; margin-top: 5px; }
-        .kpi-label { font-size: 12px; color: var(--text-sub); text-transform: uppercase; font-weight: 600; }
+        /* KPI GRIDS */
+        .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .card { background: var(--bg-card); border-radius: 8px; padding: 15px; border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
         
-        .chart-wrapper {
-            margin-bottom: 20px;
-            position: relative;
-            height: 400px;
-        }
-        
-        .chart-title {
-            font-weight: 700;
-            font-size: 15px;
-            margin-bottom: 10px;
-            display: block;
-        }
+        .kpi-label { font-size: 11px; color: var(--text-sub); text-transform: uppercase; font-weight: 700; margin-bottom: 5px; }
+        .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; }
+        .kpi-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
 
-        /* --- MOBILE ADAPTATION --- */
-        @media (max-width: 768px) {
-            body { flex-direction: column; height: auto; overflow-y: auto; }
-            
+        /* CHARTS */
+        .chart-section { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
+        .chart-box { height: 350px; position: relative; }
+        .full-width { grid-column: span 2; height: 400px; }
+
+        /* MOBILE OPTIMIZATION */
+        @media (max-width: 900px) {
+            body { flex-direction: column; height: auto; overflow: visible; }
             .nav-panel {
-                width: 100%;
-                height: auto;
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: center;
-                padding: 12px 15px;
-                border-right: none;
-                border-bottom: 1px solid var(--border);
-                position: sticky;
-                top: 0;
+                width: 100%; height: auto; flex-direction: row; justify-content: space-between; align-items: center;
+                padding: 10px 15px; border-bottom: 1px solid var(--border); position: sticky; top: 0;
             }
-
             .brand { margin-bottom: 0; font-size: 16px; }
-            .controls { flex-direction: row; }
-            .btn { padding: 8px 12px; font-size: 12px; }
-            .btn span { display: none; } /* Hide text on small buttons */
-            
-            .main-content { padding: 15px; overflow: visible; }
-            
-            .grid-kpi { grid-template-columns: 1fr 1fr; gap: 10px; } /* 2x2 Grid */
-            
-            .chart-wrapper { height: 300px; } /* Shorter charts for mobile */
-            
-            .hide-mobile { display: none; }
+            .chart-section { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; height: 300px; }
+            .chart-box { height: 300px; }
         }
 
-        /* --- LOADER --- */
-        #loader {
-            position: fixed; inset: 0;
-            background: var(--bg-card);
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .spinner {
-            width: 40px; height: 40px; border: 4px solid var(--border);
-            border-top-color: var(--accent); border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
+        /* LOADER */
+        #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
+        .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
-
     </style>
 </head>
 <body data-theme="light">
 
-    <div id="loader">
-        <div class="spinner"></div>
-        <p style="margin-top:15px; font-weight:600; color:var(--text-sub);">Processing...</p>
+<div id="loader"><div class="spinner"></div><p style="margin-top:10px;">Processing Logic...</p></div>
+
+<nav class="nav-panel">
+    <div class="brand">CURTIS<span>ANALYTICS</span></div>
+    <div style="display:flex; gap:10px; width:100%; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()" style="flex:1;">
+            📄 Upload Log
+        </button>
+        <button class="btn" onclick="toggleTheme()" style="width:50px;">🌗</button>
+    </div>
+    <input type="file" id="fileInput" accept=".csv, .xlsx" hidden onchange="handleFile(this)">
+    <div id="fileInfo" style="font-size:11px; color:var(--text-sub); margin-top:10px;"></div>
+</nav>
+
+<div class="main-content" id="dashboard" style="display:none;">
+
+    <div class="kpi-label" style="font-size:14px; margin-bottom:10px;">⚡ Energy Consumption</div>
+    <div class="grid-kpi">
+        <div class="card" style="border-left: 4px solid var(--text-main);">
+            <div class="kpi-label">Total Consumed</div>
+            <div class="kpi-val" id="kpi-total">0.00</div>
+            <div class="kpi-sub">kWh</div>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--col-travel);">
+            <div class="kpi-label">Travel Mode</div>
+            <div class="kpi-val" id="kpi-travel">0.00</div>
+            <div class="kpi-sub">kWh (Moving)</div>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--col-field);">
+            <div class="kpi-label">Field Mode</div>
+            <div class="kpi-val" id="kpi-field">0.00</div>
+            <div class="kpi-sub">kWh (Operations)</div>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--col-regen);">
+            <div class="kpi-label">Regenerated</div>
+            <div class="kpi-val" id="kpi-regen">0.00</div>
+            <div class="kpi-sub">Wh Recovered</div>
+        </div>
+        <div class="card" style="border-left: 4px solid var(--col-idle);">
+            <div class="kpi-label">Idle Loss</div>
+            <div class="kpi-val" id="kpi-idle">0.00</div>
+            <div class="kpi-sub">Wh (Stationary)</div>
+        </div>
     </div>
 
-    <nav class="nav-panel">
-        <div class="brand">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-            TRACTION<span>APP</span>
+    <div class="chart-section">
+        <div class="card full-width chart-box">
+            <div style="position:absolute; top:10px; left:15px; font-weight:600; font-size:14px;">Cumulative Energy: Travel vs Field</div>
+            <div id="chart-cumul" style="width:100%; height:100%;"></div>
         </div>
-
-        <div class="controls">
-            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                <span>Upload</span>
-            </button>
-            <input type="file" id="fileInput" accept=".csv, .xlsx" hidden onchange="handleFile(this)">
-            
-            <button class="btn" onclick="toggleTheme()">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
-                <span>Theme</span>
-            </button>
-        </div>
-    </nav>
-
-    <div class="main-content" id="dashboard" style="display:none;">
-        
-        <div class="grid-kpi">
-            <div class="card">
-                <div class="kpi-label">Energy</div>
-                <div class="kpi-val" id="val-wh">0.0</div>
-            </div>
-            <div class="card">
-                <div class="kpi-label">Regen</div>
-                <div class="kpi-val" style="color:#48bb78" id="val-regen">0.0</div>
-            </div>
-            <div class="card">
-                <div class="kpi-label">Idle Loss</div>
-                <div class="kpi-val" style="color:#f56565" id="val-idle">0.0</div>
-            </div>
-            <div class="card">
-                <div class="kpi-label">Peak Amps</div>
-                <div class="kpi-val" id="val-peak">0.0</div>
-            </div>
-        </div>
-
-        <div class="card chart-wrapper">
-            <span class="chart-title">Power vs Speed</span>
-            <div id="chart-main" style="width:100%; height:100%;"></div>
-        </div>
-
-        <div class="card chart-wrapper">
-            <span class="chart-title">Electrical (V/I)</span>
-            <div id="chart-elec" style="width:100%; height:100%;"></div>
-        </div>
-
-        <div class="card" style="margin-bottom:20px; overflow:hidden;">
-            <span class="chart-title" style="margin-bottom:15px;">Peak Events</span>
-            <div style="overflow-x:auto;">
-                <table style="width:100%; border-collapse:collapse; min-width:300px; font-size:13px;">
-                    <thead style="background:var(--bg-body); color:var(--text-sub);">
-                        <tr><th style="padding:10px; text-align:left;">Type</th><th style="padding:10px; text-align:left;">Value</th><th style="padding:10px; text-align:left;">Time</th></tr>
-                    </thead>
-                    <tbody id="table-body" style="font-family:'JetBrains Mono';"></tbody>
-                </table>
-            </div>
-        </div>
-
     </div>
 
-    <script>
-        // --- LOGIC ---
-        let theme = 'light';
-        
-        function toggleTheme() {
-            theme = theme === 'light' ? 'dark' : 'light';
-            document.body.setAttribute('data-theme', theme);
-            document.getElementById('theme-color-meta').content = theme === 'light' ? '#ffffff' : '#2d3748';
-            if(window.lastData) render(window.lastData);
-        }
+    <div class="chart-section">
+        <div class="card chart-box">
+            <div style="position:absolute; top:10px; left:15px; font-weight:600; font-size:14px;">Motor Performance (RPM vs Current)</div>
+            <div id="chart-motor" style="width:100%; height:100%;"></div>
+        </div>
+        <div class="card chart-box">
+            <div style="position:absolute; top:10px; left:15px; font-weight:600; font-size:14px;">Thermal Profile (Motor vs Ctrl)</div>
+            <div id="chart-temp" style="width:100%; height:100%;"></div>
+        </div>
+    </div>
 
-        function handleFile(input) {
+    <div class="chart-section">
+        <div class="card full-width chart-box">
+            <div style="position:absolute; top:10px; left:15px; font-weight:600; font-size:14px;">Instantaneous Power & Speed</div>
+            <div id="chart-power" style="width:100%; height:100%;"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let theme = 'light';
+    let charts = {};
+
+    function toggleTheme() {
+        theme = theme === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', theme);
+        if(window.processedData) render(window.processedData);
+    }
+
+    function handleFile(input) {
+        if(!input.files[0]) return;
+        document.getElementById('loader').style.display = 'flex';
+        document.getElementById('fileInfo').innerText = input.files[0].name;
+        
+        setTimeout(() => {
             const file = input.files[0];
-            if (!file) return;
+            if(file.name.endsWith('.csv')) {
+                Papa.parse(file, { header:true, skipEmptyLines:true, complete: r => process(r.data) });
+            } else {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+                    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:""});
+                    process(json);
+                };
+                reader.readAsArrayBuffer(file);
+            }
+        }, 50);
+    }
+
+    function process(data) {
+        if(!data || data.length < 5) return alert("Invalid Data");
+
+        const k = Object.keys(data[0]);
+        const find = (s) => k.find(key => s.some(x => key.toLowerCase().includes(x)));
+
+        const Cols = {
+            time: find(['timestamp', 'time']),
+            spd: find(['speed']),
+            volt: find(['voltage']),
+            amp: find(['current']),
+            travel: find(['travel_mode', 'travel model']),
+            field: find(['field_mode', 'field mode']),
+            rpm: find(['rpm']),
+            mtrT: find(['mtr_temp']),
+            ctrlT: find(['ctrl_temp'])
+        };
+
+        const res = { 
+            t: [], spd: [], pwr: [], rpm: [], amp: [], mtrT: [], ctrlT: [], 
+            cumTravel: [], cumField: [] 
+        };
+        
+        let stats = { total: 0, travel: 0, field: 0, regen: 0, idle: 0 };
+        let runTravel = 0, runField = 0;
+        let prevT = null;
+
+        // Decimation for speed
+        const step = Math.ceil(data.length / 4000);
+
+        for(let i=0; i<data.length; i++) {
+            const row = data[i];
+            let tStr = row[Cols.time];
+            if(!tStr) continue;
             
-            document.getElementById('loader').style.display = 'flex';
-            document.getElementById('dashboard').style.display = 'none';
+            // Fix Nano
+            if(tStr.length > 23) tStr = tStr.substring(0, 23);
+            const dt = new Date(tStr);
+            if(isNaN(dt)) continue;
 
-            setTimeout(() => {
-                if (file.name.endsWith('.csv')) {
-                    Papa.parse(file, { header: true, skipEmptyLines: true, complete: (r) => process(r.data) });
-                } else {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-                        const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:""});
-                        process(json);
-                    };
-                    reader.readAsArrayBuffer(file);
-                }
-            }, 50);
-        }
-
-        function process(data) {
-            if (!data || data.length < 5) return alert("Invalid File");
-
-            // Mapping
-            const k = Object.keys(data[0]);
-            const f = (s) => k.find(key => s.some(x => key.toLowerCase().includes(x)));
+            const V = parseFloat(row[Cols.volt])||0;
+            const A = parseFloat(row[Cols.amp])||0;
+            const S = parseFloat(row[Cols.spd])||0;
+            const RPM = parseFloat(row[Cols.rpm])||0;
             
-            const C = {
-                t: f(['timestamp', 'time']),
-                s: f(['speed']),
-                v: f(['voltage', 'volts']),
-                a: f(['current']),
-                m: f(['travel_mode', 'travel model'])
-            };
-
-            const res = { t: [], s: [], p: [], v: [], a: [], m: [], shapes: [] };
-            let s = { wh: 0, regen: 0, idle: 0, maxA: 0, maxP: 0, pt: '', at: '' };
+            const isTravel = parseInt(row[Cols.travel]) > 0;
+            const isField = parseInt(row[Cols.field]) > 0;
             
-            let prevT = null;
-            let curMode = null;
-            let mStart = null;
-            
-            // Decimate for mobile performance
-            const step = Math.ceil(data.length / 3000);
+            const P = V * A;
 
-            for (let i = 0; i < data.length; i++) {
-                const row = data[i];
-                let tStr = row[C.t];
-                if (!tStr) continue;
-                if (tStr.length > 23) tStr = tStr.substring(0, 23); // Trim nano
-                
-                const dt = new Date(tStr);
-                if (isNaN(dt)) continue;
+            // Calc Energy
+            if(prevT) {
+                const diff = (dt - prevT) / 1000;
+                if(diff > 0 && diff < 120) {
+                    const wh = (P * diff) / 3600;
+                    if(wh > 0) {
+                        stats.total += wh;
+                        
+                        // Allocating Logic
+                        if(isField) {
+                            stats.field += wh;
+                            runField += wh;
+                        } else if(isTravel) {
+                            stats.travel += wh;
+                            runTravel += wh;
+                        } else {
+                            // Default to Travel if undefined but moving, else idle bucket logic could apply
+                            // For cumulative chart, we hold previous value if no mode
+                        }
 
-                const V = parseFloat(row[C.v])||0;
-                const A = parseFloat(row[C.a])||0;
-                const Spd = parseFloat(row[C.s])||0;
-                const Mod = row[C.m]||"0";
-                const Pwr = V * A;
+                        // Idle Logic (Speed < 0.5kmph but Power > 10W)
+                        if(S < 0.5 && P > 10) stats.idle += wh;
 
-                // Shapes for modes
-                if (Mod !== curMode) {
-                    if (curMode) res.shapes.push(makeShape(mStart, tStr, curMode));
-                    curMode = Mod; mStart = tStr;
-                }
-
-                // Stats
-                if (A > s.maxA) { s.maxA = A; s.at = tStr.split(' ')[1]; }
-                if (Pwr > s.maxP) { s.maxP = Pwr; s.pt = tStr.split(' ')[1]; }
-
-                if (prevT) {
-                    const diff = (dt - prevT) / 1000;
-                    if (diff > 0 && diff < 60) {
-                        const e = (Pwr * diff) / 3600;
-                        if (e > 0) {
-                            s.wh += e;
-                            if (Spd < 1 && Pwr > 10) s.idle += e;
-                        } else s.regen += Math.abs(e);
+                    } else {
+                        stats.regen += Math.abs(wh);
                     }
                 }
-                prevT = dt;
-
-                if (i % step === 0) {
-                    res.t.push(tStr);
-                    res.s.push(Spd);
-                    res.p.push(Pwr);
-                    res.v.push(V);
-                    res.a.push(A);
-                }
             }
-            if(curMode) res.shapes.push(makeShape(mStart, res.t[res.t.length-1], curMode));
+            prevT = dt;
 
-            window.lastData = { res, s };
-            render({ res, s });
+            // Push Data for Charts
+            if(i % step === 0) {
+                res.t.push(tStr);
+                res.spd.push(S);
+                res.pwr.push(P);
+                res.rpm.push(RPM);
+                res.amp.push(A);
+                res.mtrT.push(parseFloat(row[Cols.mtrT])||0);
+                res.ctrlT.push(parseFloat(row[Cols.ctrlT])||0);
+                res.cumTravel.push(runTravel);
+                res.cumField.push(runField);
+            }
         }
 
-        function makeShape(x0, x1, mode) {
-            const colors = { '1':'#48bb78', '2':'#4299e1', '3':'#ed8936' };
-            return {
-                type: 'rect', xref: 'x', yref: 'paper',
-                x0: x0, x1: x1, y0: 0, y1: 1,
-                fillcolor: colors[mode] || '#cbd5e0',
-                opacity: 0.15, line: {width:0}
-            };
-        }
+        window.processedData = { res, stats };
+        render({ res, stats });
+    }
 
-        function render({ res, s }) {
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'block';
+    function render({ res, stats }) {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
 
-            // KPIs
-            const num = (n, d=1) => n.toLocaleString(undefined, {maximumFractionDigits:d});
-            document.getElementById('val-wh').innerText = num(s.wh/1000, 3) + " kWh";
-            document.getElementById('val-regen').innerText = num(s.regen, 1) + " Wh";
-            document.getElementById('val-idle').innerText = num(s.idle, 1) + " Wh";
-            document.getElementById('val-peak').innerText = num(s.maxA, 1) + " A";
+        // 1. KPIs
+        const num = (n, d=2) => n.toLocaleString(undefined, {maximumFractionDigits:d});
+        document.getElementById('kpi-total').innerText = num(stats.total/1000, 3);
+        document.getElementById('kpi-travel').innerText = num(stats.travel/1000, 3);
+        document.getElementById('kpi-field').innerText = num(stats.field/1000, 3);
+        document.getElementById('kpi-regen').innerText = num(stats.regen, 1);
+        document.getElementById('kpi-idle').innerText = num(stats.idle, 1);
 
-            // Table
-            document.getElementById('table-body').innerHTML = `
-                <tr><td style="padding:10px; border-bottom:1px solid var(--border)">Peak Current</td><td>${s.maxA.toFixed(1)} A</td><td>${s.at}</td></tr>
-                <tr><td style="padding:10px;">Peak Power</td><td>${s.maxP.toFixed(1)} W</td><td>${s.pt}</td></tr>
-            `;
+        // 2. Plotting
+        const isDark = theme === 'dark';
+        const color = isDark ? '#e2e8f0' : '#2d3748';
+        const grid = isDark ? '#4a5568' : '#e2e8f0';
 
-            // Charts
-            const isDark = theme === 'dark';
-            const tc = isDark ? '#e2e8f0' : '#4a5568';
-            const gc = isDark ? '#4a5568' : '#e2e8f0';
+        const layout = {
+            paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
+            font: { family: 'Inter', color: color, size: 11 },
+            xaxis: { gridcolor: grid, zeroline: false },
+            yaxis: { gridcolor: grid, zeroline: false },
+            margin: { t: 30, r: 10, l: 40, b: 30 },
+            showlegend: true, legend: { orientation:'h', y:1.1 },
+            hovermode: 'x unified'
+        };
+        const config = { responsive: true, displayModeBar: false };
 
-            const layout = {
-                paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
-                font: { family: 'Inter', color: tc, size: 11 },
-                xaxis: { gridcolor: gc, zeroline: false },
-                yaxis: { gridcolor: gc, zeroline: false },
-                margin: { t: 10, r: 10, l: 40, b: 30 },
-                showlegend: false, hovermode: 'x unified'
-            };
-            const config = { responsive: true, displayModeBar: false };
+        // Chart 1: Cumulative Energy (Field vs Travel)
+        Plotly.newPlot('chart-cumul', [
+            { x: res.t, y: res.cumTravel, name: 'Travel Wh (Cum)', type: 'scattergl', line: {color: '#3182ce', width: 2} },
+            { x: res.t, y: res.cumField, name: 'Field Wh (Cum)', type: 'scattergl', line: {color: '#d69e2e', width: 2} }
+        ], { ...layout, yaxis: { title: 'Watt-hours' } }, config);
 
-            Plotly.newPlot('chart-main', [
-                { x: res.t, y: res.p, name: 'Power', type: 'scattergl', fill: 'tozeroy', line: {color: '#f6ad55', width:1} },
-                { x: res.t, y: res.s, name: 'Speed', yaxis: 'y2', type: 'scattergl', line: {color: '#3182ce', width:2} }
-            ], { ...layout, shapes: res.shapes, yaxis2: { overlaying: 'y', side: 'right' } }, config);
+        // Chart 2: Motor RPM vs Current
+        Plotly.newPlot('chart-motor', [
+            { x: res.t, y: res.rpm, name: 'RPM', type: 'scattergl', line: {color: '#805ad5'} },
+            { x: res.t, y: res.amp, name: 'Current (A)', yaxis: 'y2', type: 'scattergl', line: {color: '#e53e3e'} }
+        ], { ...layout, yaxis2: { overlaying: 'y', side: 'right', showgrid:false } }, config);
 
-            Plotly.newPlot('chart-elec', [
-                { x: res.t, y: res.v, name: 'Volts', type: 'scattergl', line: {color: '#48bb78'} },
-                { x: res.t, y: res.a, name: 'Amps', yaxis: 'y2', type: 'scattergl', line: {color: '#f56565'} }
-            ], { ...layout, yaxis2: { overlaying: 'y', side: 'right' } }, config);
-        }
-    </script>
+        // Chart 3: Thermal
+        Plotly.newPlot('chart-temp', [
+            { x: res.t, y: res.mtrT, name: 'Motor °C', type: 'scattergl', line: {color: '#e53e3e'} },
+            { x: res.t, y: res.ctrlT, name: 'Ctrl °C', type: 'scattergl', line: {color: '#38a169'} }
+        ], layout, config);
+
+        // Chart 4: Power
+        Plotly.newPlot('chart-power', [
+            { x: res.t, y: res.pwr, name: 'Power (W)', type: 'scattergl', fill:'tozeroy', line: {color: '#dd6b20', width:1} },
+            { x: res.t, y: res.spd, name: 'Speed', yaxis: 'y2', type: 'scattergl', line: {color: '#3182ce', width:2} }
+        ], { ...layout, yaxis2: { overlaying: 'y', side: 'right' } }, config);
+    }
+</script>
 </body>
 </html>
