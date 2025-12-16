@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nandi Curtis | Final Analytics</title>
+    <title>Nandi Curtis | v16 Final</title>
     
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -75,8 +75,11 @@
 
         /* Charts */
         .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; min-height: 320px; }
-        .chart-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; }
+        .chart-card { background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); padding: 10px; display: flex; flex-direction: column; min-height: 350px;}
         .chart-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+        
+        /* Full Width Chart */
+        .full-width { grid-column: span 2; }
 
         /* Mobile Layout */
         @media (max-width: 1000px) {
@@ -86,6 +89,7 @@
             .middle-section { grid-template-columns: 1fr; }
             .mode-stack { flex-direction: row; }
             .chart-row { grid-template-columns: 1fr; }
+            .full-width { grid-column: span 1; }
             .table-wrapper { max-height: 350px; }
             .upload-box { margin-bottom: 0; padding: 6px 12px; }
         }
@@ -169,6 +173,7 @@
     </div>
 
     <div class="section-head" style="margin-top:10px;">Visual Trends</div>
+    
     <div class="chart-row">
         <div class="chart-card">
             <div class="chart-title">Cumulative Energy</div>
@@ -177,6 +182,13 @@
         <div class="chart-card">
             <div class="chart-title">Motor Load</div>
             <div id="chart-motor" style="flex:1;"></div>
+        </div>
+    </div>
+
+    <div class="chart-row">
+        <div class="chart-card full-width">
+            <div class="chart-title">Speed vs Power Timeline</div>
+            <div id="chart-power" style="flex:1;"></div>
         </div>
     </div>
     
@@ -347,6 +359,12 @@
         Plotly.newPlot('chart-motor', [
             { x: res.t, y: res.rpm, name: 'RPM', type: 'scattergl', line: {color: '#805ad5'} },
             { x: res.t, y: res.a, name: 'Amps', yaxis: 'y2', type: 'scattergl', line: {color: '#e53e3e'} }
+        ], { ...ly, yaxis2: { overlaying: 'y', side: 'right' } }, cfg);
+
+        // RESTORED SPEED VS POWER CHART
+        Plotly.newPlot('chart-power', [
+            { x: res.t, y: res.p, name: 'Power (W)', type: 'scattergl', fill:'tozeroy', line: {color: '#dd6b20', width:1} },
+            { x: res.t, y: res.s, name: 'Speed', yaxis: 'y2', type: 'scattergl', line: {color: '#3182ce', width:2} }
         ], { ...ly, yaxis2: { overlaying: 'y', side: 'right' } }, cfg);
     }
 </script>
