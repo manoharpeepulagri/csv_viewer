@@ -3,516 +3,696 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Traction Telemetry Analytics | Professional</title>
+    <title>Advanced Traction Analytics Platform v5</title>
     
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
-        /* --- THEME VARIABLES --- */
         :root {
-            /* Light Mode (Default - Better for Projectors) */
-            --bg-body: #f4f6f8;
-            --bg-card: #ffffff;
-            --bg-side: #ffffff;
-            --text-main: #2d3748;
-            --text-sub: #718096;
-            --border: #e2e8f0;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            
-            /* Data Colors (Professional Palette) */
-            --col-pwr: #f6ad55; /* Orange */
-            --col-spd: #4299e1; /* Blue */
-            --col-volt: #48bb78; /* Green */
-            --col-curr: #f56565; /* Red */
-            --col-temp: #9f7aea; /* Purple */
-            
-            --chart-grid: #e2e8f0;
-            --chart-text: #4a5568;
+            --bg-body: #0a0e14; --bg-panel: #151922; --bg-elevated: #1a1f2b;
+            --border: #2d3441; --border-bright: #3d4453;
+            --text-main: #e4e6eb; --text-mute: #8b92a1; --text-dim: #5c6370;
+            --accent: #2e7de6; --accent-bright: #4a9eff;
+            --danger: #e63946; --success: #06d6a0; --warn: #ffa726;
+            --info: #26c6da; --purple: #9c27b0; --shadow: rgba(0, 0, 0, 0.3);
         }
-
-        [data-theme="dark"] {
-            /* Dark Mode (High Contrast) */
-            --bg-body: #1a202c;
-            --bg-card: #2d3748;
-            --bg-side: #2d3748;
-            --text-main: #edf2f7;
-            --text-sub: #a0aec0;
-            --border: #4a5568;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
-            
-            --chart-grid: #4a5568;
-            --chart-text: #cbd5e0;
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background-color: var(--bg-body); color: var(--text-main); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+        
+        .navbar {
+            background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-panel) 100%);
+            border-bottom: 2px solid var(--border-bright); padding: 12px 24px;
+            display: flex; justify-content: space-between; align-items: center; height: 70px;
+            box-shadow: 0 4px 12px var(--shadow);
         }
-
-        * { box-sizing: border-box; transition: background-color 0.3s, color 0.3s; }
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-body);
-            color: var(--text-main);
-            margin: 0;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
+        .navbar h1 { 
+            font-size: 20px; font-weight: 700; letter-spacing: -0.5px;
+            background: linear-gradient(135deg, var(--accent-bright) 0%, var(--info) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
-
-        /* --- SIDEBAR --- */
-        aside {
-            width: 260px;
-            background: var(--bg-side);
-            border-right: 1px solid var(--border);
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            z-index: 10;
-            box-shadow: var(--shadow);
+        .navbar-controls { display: flex; gap: 12px; }
+        .upload-btn, .export-btn {
+            border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;
+            font-size: 13px; font-weight: 600; transition: all 0.2s ease;
         }
-
-        .brand {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 30px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .upload-btn { background: var(--accent); color: white; box-shadow: 0 2px 8px rgba(46, 125, 230, 0.3); }
+        .upload-btn:hover { background: var(--accent-bright); transform: translateY(-1px); }
+        .export-btn { background: var(--bg-elevated); color: var(--text-main); border: 1px solid var(--border-bright); font-weight: 500; }
+        .export-btn:hover { background: var(--border-bright); transform: translateY(-1px); }
+        
+        .grid-container { display: grid; grid-template-columns: repeat(12, 1fr); gap: 15px; padding: 15px; }
+        .panel {
+            background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px;
+            padding: 18px; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 2px 8px var(--shadow); transition: all 0.3s ease;
         }
-        .brand span { color: var(--col-spd); }
-
-        .control-group { margin-bottom: 25px; }
-        .control-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-sub);
-            margin-bottom: 8px;
-            font-weight: 600;
+        .panel:hover { border-color: var(--border-bright); box-shadow: 0 4px 16px var(--shadow); }
+        .panel-header {
+            font-size: 12px; font-weight: 600; color: var(--text-mute);
+            text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-
-        .btn {
-            width: 100%;
-            padding: 10px 16px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: var(--bg-body);
-            color: var(--text-main);
-            font-weight: 600;
-            cursor: pointer;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            transition: all 0.2s;
+        .panel-badge {
+            background: var(--bg-elevated); padding: 3px 8px; border-radius: 4px;
+            font-size: 10px; color: var(--accent); font-weight: 600;
         }
-        .btn:hover { border-color: var(--col-spd); color: var(--col-spd); }
-        .btn-primary { background: var(--col-spd); color: white; border: none; }
-        .btn-primary:hover { background: #3182ce; color: white; }
-
-        /* --- MAIN CONTENT --- */
-        main {
-            flex: 1;
-            padding: 25px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+        
+        .full-width { grid-column: span 12; height: 500px; }
+        .two-third { grid-column: span 8; height: 450px; }
+        .one-third { grid-column: span 4; height: 450px; }
+        .half-width { grid-column: span 6; height: 450px; }
+        .kpi-box { grid-column: span 2; height: 130px; }
+        
+        @media (max-width: 1200px) {
+            .kpi-box { grid-column: span 4; }
+            .half-width, .two-third, .one-third { grid-column: span 12; }
         }
-
-        /* --- KPI GRID --- */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-        }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: var(--shadow);
-            position: relative;
-        }
-
-        .kpi-title { font-size: 13px; color: var(--text-sub); font-weight: 500; }
+        
         .kpi-value {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 24px;
-            font-weight: 700;
-            margin-top: 5px;
-            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 700;
+            margin-top: auto; color: var(--text-main); line-height: 1;
         }
-        .kpi-unit { font-size: 14px; color: var(--text-sub); margin-left: 4px; font-weight: 400; }
-
-        /* --- CHARTS --- */
-        .chart-container {
-            height: 450px;
-            width: 100%;
-            position: relative;
+        .kpi-unit { font-size: 13px; color: var(--text-dim); font-weight: 400; margin-left: 4px; }
+        .kpi-trend { font-size: 11px; color: var(--text-mute); margin-top: 6px; font-weight: 500; }
+        .kpi-trend.positive { color: var(--success); }
+        .kpi-trend.negative { color: var(--danger); }
+        
+        .table-wrap { width: 100%; height: 100%; overflow: auto; border-radius: 4px; }
+        table { width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-main); }
+        th {
+            text-align: left; padding: 10px 12px; background: var(--bg-elevated);
+            position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border-bright);
+            font-weight: 600; color: var(--text-mute);
         }
-        .chart-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-        }
-        .chart-title { font-weight: 600; font-size: 16px; }
-
-        /* --- TABLE --- */
-        .table-wrap { overflow-x: auto; height: 300px; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { 
-            text-align: left; padding: 12px; 
-            background: var(--bg-body); color: var(--text-sub); 
-            position: sticky; top: 0; 
-        }
-        td { padding: 10px 12px; border-bottom: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; }
-
-        /* --- LOADER --- */
+        td { padding: 8px 12px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        tr:hover td { background: var(--bg-elevated); cursor: pointer; }
+        
         #loader {
-            position: fixed; inset: 0;
-            background: rgba(255,255,255,0.9);
-            z-index: 1000;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10,14,20,0.98); display: none; justify-content: center;
+            align-items: center; flex-direction: column; z-index: 2000;
         }
-        [data-theme="dark"] #loader { background: rgba(26,32,44,0.95); }
-        .spinner {
-            width: 40px; height: 40px; border: 4px solid var(--border);
-            border-top-color: var(--col-spd); border-radius: 50%;
-            animation: spin 0.8s linear infinite;
+        .loader-spinner {
+            width: 50px; height: 50px; border: 4px solid var(--border);
+            border-top-color: var(--accent); border-radius: 50%;
+            animation: spin 1s linear infinite; margin-bottom: 20px;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
-
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+        .stat-card { background: var(--bg-elevated); padding: 10px; border-radius: 6px; border-left: 3px solid var(--accent); }
+        .stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: var(--text-main); margin-top: 4px; }
     </style>
 </head>
-<body data-theme="light">
+<body>
 
-    <div id="loader">
-        <div class="spinner"></div>
-        <p style="margin-top:15px; font-weight:600;">Analyzing Data...</p>
+<div id="loader">
+    <div class="loader-spinner"></div>
+    <h2>Processing Telemetry Data...</h2>
+    <p>Parsing timestamps & calculating precision metrics</p>
+</div>
+
+<div class="navbar">
+    <h1>⚡ TRACTION ANALYTICS PLATFORM <span style="font-size:11px; color:#666; margin-left:10px; font-weight:400;">v5.0 ENTERPRISE</span></h1>
+    <div class="navbar-controls">
+        <button class="export-btn" onclick="exportReport()">📊 Export Report</button>
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">📁 Upload Data</button>
+        <input type="file" id="fileInput" accept=".csv, .xlsx" hidden>
+    </div>
+</div>
+
+<div class="grid-container" id="dashboard" style="display:none;">
+    <div class="panel kpi-box">
+        <div class="panel-header">Total Energy</div>
+        <div class="kpi-value" id="kpi-wh">0.0000<span class="kpi-unit">Wh</span></div>
+        <div class="kpi-trend" id="kpi-wh-trend"></div>
+    </div>
+    <div class="panel kpi-box">
+        <div class="panel-header">Regen Energy</div>
+        <div class="kpi-value" style="color: var(--success)" id="kpi-regen">0.0000<span class="kpi-unit">Wh</span></div>
+        <div class="kpi-trend positive" id="kpi-regen-trend"></div>
+    </div>
+    <div class="panel kpi-box">
+        <div class="panel-header">Idle Loss</div>
+        <div class="kpi-value" style="color: var(--danger)" id="kpi-idle">0.0000<span class="kpi-unit">Wh</span></div>
+        <div class="kpi-trend negative" id="kpi-idle-trend"></div>
+    </div>
+    <div class="panel kpi-box">
+        <div class="panel-header">Peak Current</div>
+        <div class="kpi-value" id="kpi-curr">0.0000<span class="kpi-unit">A</span></div>
+        <div class="kpi-trend" id="kpi-curr-trend"></div>
+    </div>
+    <div class="panel kpi-box">
+        <div class="panel-header">Peak Power</div>
+        <div class="kpi-value" id="kpi-pwr">0.0000<span class="kpi-unit">W</span></div>
+        <div class="kpi-trend" id="kpi-pwr-trend"></div>
+    </div>
+    <div class="panel kpi-box">
+        <div class="panel-header">Max Motor Temp</div>
+        <div class="kpi-value" id="kpi-temp">0.0000<span class="kpi-unit">°C</span></div>
+        <div class="kpi-trend" id="kpi-temp-trend"></div>
     </div>
 
-    <aside>
-        <div class="brand">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-            TRACTION<span>ANALYTICS</span>
-        </div>
+    <div class="panel full-width">
+        <div class="panel-header">Power & Speed Time Series Analysis <span class="panel-badge">REAL-TIME</span></div>
+        <div id="chart-main" style="width:100%; height:100%;"></div>
+    </div>
 
-        <div class="control-group">
-            <div class="control-label">Data Source</div>
-            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
-                📂 Upload File
-            </button>
-            <input type="file" id="fileInput" accept=".csv, .xlsx" hidden onchange="handleFile(this)">
-            <div id="fileName" style="font-size:12px; color:var(--text-sub); margin-top:5px; word-break:break-all;">No file loaded</div>
-        </div>
+    <div class="panel two-third">
+        <div class="panel-header">Electrical Dynamics (V-I Relationship) <span class="panel-badge">PRECISION</span></div>
+        <div id="chart-elec" style="width:100%; height:100%;"></div>
+    </div>
 
-        <div class="control-group">
-            <div class="control-label">Appearance</div>
-            <button class="btn" onclick="toggleTheme()">
-                🌗 Switch Theme
-            </button>
-        </div>
-        
-        <div style="margin-top:auto; font-size:11px; color:var(--text-sub);">
-            v5.0 Pro Build<br>Engine: Plotly.js + PapaParse
-        </div>
-    </aside>
-
-    <main id="dashboard" style="display:none;">
-        
-        <div class="kpi-grid">
-            <div class="card">
-                <div class="kpi-title">Total Consumption</div>
-                <div class="kpi-value" id="val-wh">0.00</div><span class="kpi-unit">kWh</span>
+    <div class="panel one-third">
+        <div class="panel-header">Efficiency Metrics <span class="panel-badge">ANALYTICS</span></div>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Avg Efficiency</div>
+                <div class="stat-value" id="stat-eff">--</div>
             </div>
-            <div class="card">
-                <div class="kpi-title">Regen Energy</div>
-                <div class="kpi-value" style="color:var(--col-volt);" id="val-regen">0.00</div><span class="kpi-unit">Wh</span>
+            <div class="stat-card" style="border-left-color: var(--success)">
+                <div class="stat-label">Regen %</div>
+                <div class="stat-value" id="stat-regen-pct">--</div>
             </div>
-            <div class="card">
-                <div class="kpi-title">Idle Loss</div>
-                <div class="kpi-value" style="color:var(--col-curr);" id="val-idle">0.00</div><span class="kpi-unit">Wh</span>
-            </div>
-            <div class="card">
-                <div class="kpi-title">Peak Current</div>
-                <div class="kpi-value" id="val-peak-curr">0.0</div><span class="kpi-unit">A</span>
+            <div class="stat-card" style="border-left-color: var(--danger)">
+                <div class="stat-label">Loss %</div>
+                <div class="stat-value" id="stat-loss-pct">--</div>
             </div>
         </div>
+        <div id="chart-efficiency" style="width:100%; height:280px; margin-top:15px;"></div>
+    </div>
 
-        <div class="card">
-            <div class="chart-header">
-                <div class="chart-title">System Performance Overview</div>
-                <span style="font-size:12px; color:var(--text-sub);">Power (Fill) vs Speed (Line) | Colored Bands = Travel Mode</span>
-            </div>
-            <div id="chart-main" class="chart-container"></div>
+    <div class="panel half-width">
+        <div class="panel-header">Thermal Performance (Motor & Controller) <span class="panel-badge">MONITORING</span></div>
+        <div id="chart-thermal" style="width:100%; height:100%;"></div>
+    </div>
+
+    <div class="panel half-width">
+        <div class="panel-header">Power Distribution Analysis <span class="panel-badge">HISTOGRAM</span></div>
+        <div id="chart-power-dist" style="width:100%; height:100%;"></div>
+    </div>
+
+    <div class="panel half-width">
+        <div class="panel-header">Critical Events Log <span class="panel-badge">EVENTS</span></div>
+        <div class="table-wrap">
+            <table id="peak-table">
+                <thead><tr><th>Event Type</th><th>Value</th><th>Timestamp</th><th>Mode</th><th>Context</th></tr></thead>
+                <tbody></tbody>
+            </table>
         </div>
+    </div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
-            <div class="card">
-                <div class="chart-header"><div class="chart-title">Electrical (V/I)</div></div>
-                <div id="chart-elec" class="chart-container" style="height:350px;"></div>
-            </div>
-            <div class="card">
-                <div class="chart-header"><div class="chart-title">Peak Event Logs</div></div>
-                <div class="table-wrap">
-                    <table id="peak-table">
-                        <thead>
-                            <tr><th>Parameter</th><th>Value</th><th>Timestamp</th><th>Mode</th></tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        
-        <div class="card">
-             <div class="chart-header"><div class="chart-title">Thermal Profile</div></div>
-             <div id="chart-temp" class="chart-container" style="height:250px;"></div>
-        </div>
+    <div class="panel half-width">
+        <div class="panel-header">Travel Mode Distribution <span class="panel-badge">CATEGORICAL</span></div>
+        <div id="chart-mode-pie" style="width:100%; height:100%;"></div>
+    </div>
 
-    </main>
+    <div class="panel full-width" style="height: 200px;">
+        <div class="panel-header">Travel Mode Timeline <span class="panel-badge">TIMELINE</span></div>
+        <div id="chart-modes" style="width:100%; height:100%;"></div>
+    </div>
 
-    <script>
-        // --- LOGIC ENGINE ---
-        
-        let currentTheme = 'light';
-        let globalData = null;
+    <div class="panel half-width">
+        <div class="panel-header">Parameter Correlation Matrix <span class="panel-badge">HEATMAP</span></div>
+        <div id="chart-correlation" style="width:100%; height:100%;"></div>
+    </div>
 
-        function toggleTheme() {
-            const body = document.body;
-            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
-            body.setAttribute('data-theme', currentTheme);
-            if (globalData) renderVisuals(globalData); // Re-render charts with new colors
+    <div class="panel half-width">
+        <div class="panel-header">Current Waveform FFT Analysis <span class="panel-badge">SPECTRAL</span></div>
+        <div id="chart-fft" style="width:100%; height:100%;"></div>
+    </div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const loader = document.getElementById('loader');
+const dashboard = document.getElementById('dashboard');
+let globalData = null;
+
+fileInput.addEventListener('change', handleFile);
+
+function handleFile(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    loader.style.display = 'flex';
+    dashboard.style.display = 'none';
+    
+    setTimeout(() => {
+        if (file.name.endsWith('.csv')) {
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                dynamicTyping: true,
+                complete: (res) => processData(res.data)
+            });
+        } else {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+                const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:"", raw: false});
+                processData(json);
+            };
+            reader.readAsArrayBuffer(file);
         }
+    }, 100);
+}
 
-        function handleFile(input) {
-            const file = input.files[0];
-            if (!file) return;
-
-            document.getElementById('fileName').innerText = file.name;
-            document.getElementById('loader').style.display = 'flex';
-            document.getElementById('dashboard').style.display = 'none';
-
-            setTimeout(() => {
-                if (file.name.endsWith('.csv')) {
-                    Papa.parse(file, {
-                        header: true, skipEmptyLines: true,
-                        complete: (res) => processData(res.data)
-                    });
+function processData(data) {
+    if (!data || data.length < 2) return alert("File empty or invalid");
+    
+    const keys = Object.keys(data[0]);
+    const find = (arr) => keys.find(k => arr.some(x => k.toLowerCase().includes(x)));
+    
+    const C = {
+        time: find(['timestamp', 'time']),
+        spd: find(['speed']),
+        volt: find(['voltage', 'volts']),
+        amp: find(['current\na', 'current a', 'current']),
+        pwr: find(['power']),
+        mode: find(['travel_mode', 'travel model', 'mode']),
+        mTemp: find(['mtr_temp', 'motor_temp']),
+        cTemp: find(['ctrl_temp', 'controller_temp'])
+    };
+    
+    const traces = { 
+        time: [], spd: [], pwr: [], volt: [], amp: [], 
+        mode: [], mTemp: [], cTemp: [], efficiency: []
+    };
+    
+    let stats = {
+        wh: 0, regen: 0, idle: 0,
+        maxA: 0, maxW: 0, maxT: -99, maxCT: -99,
+        maxATime: '', maxWTime: '', maxTTime: '',
+        maxAMode: '', maxWMode: '',
+        avgV: 0, avgA: 0, avgP: 0, avgS: 0,
+        modeCount: {},
+        powerBins: new Array(20).fill(0),
+        samples: 0
+    };
+    
+    let prevTime = null;
+    const step = data.length > 50000 ? 3 : 1;
+    
+    data.forEach((row, i) => {
+        const tStr = row[C.time];
+        const S = parseFloat(row[C.spd]) || 0;
+        const V = parseFloat(row[C.volt]) || 0;
+        const A = parseFloat(row[C.amp]) || 0;
+        const M = String(row[C.mode] || "0");
+        const MT = parseFloat(row[C.mTemp]) || 0;
+        const CT = parseFloat(row[C.cTemp]) || 0;
+        const P = row[C.pwr] ? parseFloat(row[C.pwr]) : V * A;
+        
+        let jsDate;
+        try {
+            const cleanTime = tStr.length > 23 ? tStr.substring(0, 23) : tStr; 
+            jsDate = new Date(cleanTime);
+        } catch(e) { return; }
+        
+        if (isNaN(jsDate)) return;
+        
+        stats.samples++;
+        stats.avgV += V;
+        stats.avgA += A;
+        stats.avgP += P;
+        stats.avgS += S;
+        
+        stats.modeCount[M] = (stats.modeCount[M] || 0) + 1;
+        
+        const binIdx = Math.min(Math.floor(P / 500), 19);
+        if (binIdx >= 0) stats.powerBins[binIdx]++;
+        
+        if (A > stats.maxA) { 
+            stats.maxA = A; 
+            stats.maxATime = tStr; 
+            stats.maxAMode = M; 
+        }
+        if (P > stats.maxW) { 
+            stats.maxW = P; 
+            stats.maxWTime = tStr; 
+            stats.maxWMode = M; 
+        }
+        if (MT > stats.maxT) { 
+            stats.maxT = MT; 
+            stats.maxTTime = tStr; 
+        }
+        if (CT > stats.maxCT) stats.maxCT = CT;
+        
+        if (prevTime) {
+            const dt = (jsDate - prevTime) / 1000;
+            if (dt > 0 && dt < 300) {
+                const wh = (P * dt) / 3600;
+                if (wh > 0) {
+                    stats.wh += wh;
+                    if (S < 1 && P > 10) stats.idle += wh;
                 } else {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
-                        const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {defval:""});
-                        processData(json);
-                    };
-                    reader.readAsArrayBuffer(file);
-                }
-            }, 100);
-        }
-
-        function processData(rawData) {
-            if (!rawData || rawData.length < 5) {
-                alert("File appears empty or invalid.");
-                document.getElementById('loader').style.display = 'none';
-                return;
-            }
-
-            // 1. Column Search
-            const keys = Object.keys(rawData[0]);
-            const find = (t) => keys.find(k => t.some(x => k.toLowerCase().includes(x)));
-
-            const C = {
-                time: find(['timestamp', 'time']),
-                spd: find(['speed']),
-                volt: find(['voltage', 'volts']),
-                amp: find(['current\na', 'current']),
-                mode: find(['travel_mode', 'travel model']),
-                mtrT: find(['mtr_temp']),
-                ctrlT: find(['ctrl_temp'])
-            };
-
-            // 2. Data Vectors
-            const d = { 
-                time: [], spd: [], pwr: [], volt: [], amp: [], 
-                mtrT: [], ctrlT: [], 
-                shapes: [] // For Travel Mode background highlighting
-            };
-
-            let stats = { wh: 0, regen: 0, idle: 0, maxA: 0, maxP: 0 };
-            let prevTime = null;
-            let currentMode = null;
-            let modeStart = null;
-
-            // Decimation for speed (max 5000 points visible)
-            const step = Math.ceil(rawData.length / 5000);
-
-            for (let i = 0; i < rawData.length; i++) {
-                const row = rawData[i];
-                const tStr = row[C.time];
-                if (!tStr) continue;
-
-                // Safe date parse
-                const cleanTime = tStr.length > 23 ? tStr.substring(0, 23) : tStr;
-                const dt = new Date(cleanTime);
-                if (isNaN(dt)) continue;
-
-                const V = parseFloat(row[C.volt]) || 0;
-                const A = parseFloat(row[C.amp]) || 0;
-                const S = parseFloat(row[C.spd]) || 0;
-                const M = row[C.mode] || "0";
-                const P = V * A;
-
-                // --- TRAVEL MODE SHAPES ---
-                // Identify when mode changes to draw background blocks
-                if (M !== currentMode) {
-                    if (currentMode !== null) {
-                        d.shapes.push({
-                            type: 'rect',
-                            xref: 'x', yref: 'paper',
-                            x0: modeStart, x1: cleanTime,
-                            y0: 0, y1: 1,
-                            fillcolor: getModeColor(currentMode),
-                            opacity: 0.1, line: {width: 0}
-                        });
-                    }
-                    currentMode = M;
-                    modeStart = cleanTime;
-                }
-
-                // --- STATS ---
-                if (A > stats.maxA) { stats.maxA = A; stats.peakATime = cleanTime; stats.peakAMode = M; }
-                if (P > stats.maxP) { stats.maxP = P; stats.peakPTime = cleanTime; stats.peakPMode = M; }
-
-                if (prevTime) {
-                    const delta = (dt - prevTime) / 1000;
-                    if (delta > 0 && delta < 60) {
-                        const wh = (P * delta) / 3600;
-                        if (wh > 0) {
-                            stats.wh += wh;
-                            if (S < 0.5 && P > 10) stats.idle += wh;
-                        } else {
-                            stats.regen += Math.abs(wh);
-                        }
-                    }
-                }
-                prevTime = dt;
-
-                // --- PLOT DATA (Decimated) ---
-                if (i % step === 0) {
-                    d.time.push(cleanTime);
-                    d.spd.push(S);
-                    d.pwr.push(P);
-                    d.volt.push(V);
-                    d.amp.push(A);
-                    d.mtrT.push(parseFloat(row[C.mtrT])||0);
-                    d.ctrlT.push(parseFloat(row[C.ctrlT])||0);
+                    stats.regen += Math.abs(wh);
                 }
             }
+        }
+        prevTime = jsDate;
+        
+        if (i % step === 0) {
+            traces.time.push(jsDate.toISOString());
+            traces.spd.push(S);
+            traces.pwr.push(P);
+            traces.volt.push(V);
+            traces.amp.push(A);
+            traces.mode.push(M);
+            traces.mTemp.push(MT);
+            traces.cTemp.push(CT);
+            traces.efficiency.push(S > 0 ? (P / S) : 0);
+        }
+    });
+    
+    if (stats.samples > 0) {
+        stats.avgV /= stats.samples;
+        stats.avgA /= stats.samples;
+        stats.avgP /= stats.samples;
+        stats.avgS /= stats.samples;
+    }
+    
+    globalData = { traces, stats, C };
+    
+    renderKPIs(stats);
+    renderCharts(traces, stats);
+    renderTable(stats);
+    renderEfficiencyStats(stats);
+    
+    loader.style.display = 'none';
+    dashboard.style.display = 'grid';
+}
 
-            // Close last shape
-            if (currentMode !== null && modeStart) {
-                d.shapes.push({
-                    type: 'rect', xref: 'x', yref: 'paper',
-                    x0: modeStart, x1: d.time[d.time.length-1],
-                    y0: 0, y1: 1,
-                    fillcolor: getModeColor(currentMode), opacity: 0.1, line: {width: 0}
-                });
+function fmt(val, dec=4) {
+    if (val === null || val === undefined || isNaN(val)) return "N/A";
+    return val.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+}
+
+function renderKPIs(s) {
+    document.getElementById('kpi-wh').innerHTML = fmt(s.wh, 4) + '<span class="kpi-unit">Wh</span>';
+    document.getElementById('kpi-regen').innerHTML = fmt(s.regen, 4) + '<span class="kpi-unit">Wh</span>';
+    document.getElementById('kpi-idle').innerHTML = fmt(s.idle, 4) + '<span class="kpi-unit">Wh</span>';
+    document.getElementById('kpi-curr').innerHTML = fmt(s.maxA, 2) + '<span class="kpi-unit">A</span>';
+    document.getElementById('kpi-pwr').innerHTML = fmt(s.maxW, 2) + '<span class="kpi-unit">W</span>';
+    document.getElementById('kpi-temp').innerHTML = fmt(s.maxT, 1) + '<span class="kpi-unit">°C</span>';
+    
+    const regenPct = s.wh > 0 ? (s.regen / s.wh * 100) : 0;
+    const idlePct = s.wh > 0 ? (s.idle / s.wh * 100) : 0;
+    
+    document.getElementById('kpi-regen-trend').textContent = `${fmt(regenPct, 1)}% recovered`;
+    document.getElementById('kpi-idle-trend').textContent = `${fmt(idlePct, 1)}% wasted`;
+}
+
+function renderEfficiencyStats(s) {
+    const regenPct = s.wh > 0 ? (s.regen / s.wh * 100) : 0;
+    const lossPct = s.wh > 0 ? (s.idle / s.wh * 100) : 0;
+    const avgEff = s.avgS > 0 ? (s.avgP / s.avgS) : 0;
+    
+    document.getElementById('stat-eff').textContent = fmt(avgEff, 1);
+    document.getElementById('stat-regen-pct').textContent = fmt(regenPct, 1) + '%';
+    document.getElementById('stat-loss-pct').textContent = fmt(lossPct, 1) + '%';
+}
+
+function renderTable(s) {
+    const tbody = document.querySelector('#peak-table tbody');
+    
+    const row = (label, val, unit, time, mode, context) => {
+        let cleanTime = time.split(' ')[1] || time; 
+        if(cleanTime.includes('.') && cleanTime.length > 12) {
+            cleanTime = cleanTime.substring(0, 12); 
+        }
+        return `<tr>
+            <td style="color:var(--accent); font-weight:600;">${label}</td>
+            <td style="font-size:12px; font-weight:500;">${fmt(val, 4)} ${unit}</td>
+            <td style="font-family: 'JetBrains Mono', monospace;">${cleanTime}</td>
+            <td><span style="background:var(--bg-elevated); padding:2px 6px; border-radius:3px;">Mode ${mode}</span></td>
+            <td style="color:var(--text-dim); font-size:10px;">${context}</td>
+        </tr>`;
+    };
+    
+    tbody.innerHTML = 
+        row("Max Current", s.maxA, "A", s.maxATime, s.maxAMode, "Peak electrical load") +
+        row("Max Power", s.maxW, "W", s.maxWTime, s.maxWMode, "Peak power consumption") +
+        row("Max Motor Temp", s.maxT, "°C", s.maxTTime, "-", "Thermal limit approached");
+}
+
+function renderCharts(t, s) {
+    const baseLayout = {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { color: '#e4e6eb', family: 'Inter', size: 11 },
+        xaxis: { gridcolor: '#2d3441', zeroline: false, showgrid: true },
+        yaxis: { gridcolor: '#2d3441', zeroline: false, showgrid: true },
+        margin: { t: 40, l: 60, r: 60, b: 50 },
+        hovermode: 'x unified',
+        showlegend: true,
+        legend: { orientation: 'h', y: 1.15, bgcolor: 'rgba(21, 25, 34, 0.8)', bordercolor: '#2d3441', borderwidth: 1 }
+    };
+    
+    const config = { responsive: true, displayModeBar: true, displaylogo: false, modeBarButtonsToRemove: ['lasso2d', 'select2d'] };
+    
+    Plotly.newPlot('chart-main', [
+        { x: t.time, y: t.pwr, name: 'Power (W)', type: 'scattergl', fill: 'tozeroy', line: { color: '#ffa726', width: 1.5 }, fillcolor: 'rgba(255, 167, 38, 0.2)' },
+        { x: t.time, y: t.spd, name: 'Speed (km/h)', yaxis: 'y2', type: 'scattergl', line: { color: '#4a9eff', width: 2 } }
+    ], {
+        ...baseLayout,
+        yaxis: { ...baseLayout.yaxis, title: 'Power (W)' },
+        yaxis2: { title: 'Speed (km/h)', overlaying: 'y', side: 'right', gridcolor: '#2d3441' }
+    }, config);
+    
+    Plotly.newPlot('chart-elec', [
+        { x: t.time, y: t.volt, name: 'Voltage (V)', type: 'scattergl', line: { color: '#06d6a0', width: 1.5 } },
+        { x: t.time, y: t.amp, name: 'Current (A)', yaxis: 'y2', type: 'scattergl', line: { color: '#e63946', width: 1.5 } }
+    ], {
+        ...baseLayout,
+        yaxis: { ...baseLayout.yaxis, title: 'Voltage (V)' },
+        yaxis2: { title: 'Current (A)', overlaying: 'y', side: 'right', gridcolor: '#2d3441' }
+    }, config);
+    
+    Plotly.newPlot('chart-thermal', [
+        { x: t.time, y: t.mTemp, name: 'Motor Temp (°C)', type: 'scattergl', line: { color: '#e63946', width: 2 } },
+        { x: t.time, y: t.cTemp, name: 'Controller Temp (°C)', type: 'scattergl', line: { color: '#ffa726', width: 2 } }
+    ], { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Temperature (°C)' } }, config);
+    
+    Plotly.newPlot('chart-power-dist', [{
+        y: s.powerBins,
+        x: Array.from({length: 20}, (_, i) => `${i*500}-${(i+1)*500}W`),
+        type: 'bar',
+        marker: { color: '#4a9eff', line: { color: '#2e7de6', width: 1 } }
+    }], {
+        ...baseLayout,
+        xaxis: { ...baseLayout.xaxis, title: 'Power Range', tickangle: -45 },
+        yaxis: { ...baseLayout.yaxis, title: 'Sample Count' },
+        showlegend: false
+    }, config);
+    
+    const modeLabels = Object.keys(s.modeCount);
+    const modeValues = Object.values(s.modeCount);
+    
+    Plotly.newPlot('chart-mode-pie', [{
+        labels: modeLabels.map(m => `Mode ${m}`),
+        values: modeValues,
+        type: 'pie',
+        marker: { colors: ['#4a9eff', '#06d6a0', '#ffa726', '#e63946', '#9c27b0', '#26c6da'] },
+        textinfo: 'label+percent',
+        textfont: { size: 12 }
+    }], {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { color: '#e4e6eb', family: 'Inter' },
+        margin: { t: 20, l: 20, r: 20, b: 20 },
+        showlegend: true,
+        legend: { orientation: 'v', x: 1.1, y: 0.5 }
+    }, config);
+
+    const zData = t.mode.map(m => parseInt(m) || 0);
+    Plotly.newPlot('chart-modes', [{
+        x: t.time,
+        y: t.mode,
+        mode: 'markers',
+        type: 'scattergl',
+        marker: { color: zData, colorscale: 'Viridis', size: 6, symbol: 'square', line: { width: 0 } }
+    }], {
+        ...baseLayout,
+        yaxis: { ...baseLayout.yaxis, title: 'Travel Mode', type: 'category' },
+        xaxis: { ...baseLayout.xaxis, title: 'Time' }
+    }, config);
+    
+    const avgEff = s.avgS > 0 ? (s.avgP / s.avgS) : 0;
+    Plotly.newPlot('chart-efficiency', [{
+        type: "indicator",
+        mode: "gauge+number",
+        value: avgEff,
+        title: { text: "Avg Efficiency (W/km/h)", font: { size: 12 } },
+        gauge: {
+            axis: { range: [null, 200], tickwidth: 1, tickcolor: "#2d3441" },
+            bar: { color: "#4a9eff" },
+            bgcolor: "transparent",
+            borderwidth: 2,
+            bordercolor: "#2d3441",
+            steps: [
+                { range: [0, 50], color: "rgba(6, 214, 160, 0.2)" },
+                { range: [50, 100], color: "rgba(255, 167, 38, 0.2)" },
+                { range: [100, 200], color: "rgba(230, 57, 70, 0.2)" }
+            ],
+            threshold: { line: { color: "#e63946", width: 4 }, thickness: 0.75, value: 150 }
+        }
+    }], {
+        paper_bgcolor: 'transparent',
+        plot_bgcolor: 'transparent',
+        font: { color: '#e4e6eb', family: 'Inter' },
+        margin: { t: 40, l: 20, r: 20, b: 20 }
+    }, config);
+    
+    const corrMatrix = calculateCorrelation(t);
+    Plotly.newPlot('chart-correlation', [{
+        z: corrMatrix.values,
+        x: corrMatrix.labels,
+        y: corrMatrix.labels,
+        type: 'heatmap',
+        colorscale: 'RdBu',
+        zmid: 0,
+        text: corrMatrix.values.map(row => row.map(v => v.toFixed(2))),
+        texttemplate: '%{text}',
+        textfont: { size: 10 },
+        colorbar: { thickness: 15 }
+    }], {
+        ...baseLayout,
+        xaxis: { ...baseLayout.xaxis, tickangle: -45 },
+        yaxis: { ...baseLayout.yaxis },
+        margin: { t: 20, l: 80, r: 40, b: 80 }
+    }, config);
+    
+    const fftData = calculateFFT(t.amp.slice(0, Math.min(4096, t.amp.length)));
+    Plotly.newPlot('chart-fft', [{
+        x: fftData.freq,
+        y: fftData.magnitude,
+        type: 'scattergl',
+        fill: 'tozeroy',
+        line: { color: '#9c27b0', width: 1.5 },
+        fillcolor: 'rgba(156, 39, 176, 0.2)'
+    }], {
+        ...baseLayout,
+        xaxis: { ...baseLayout.xaxis, title: 'Frequency (Hz)', type: 'log' },
+        yaxis: { ...baseLayout.yaxis, title: 'Magnitude', type: 'log' },
+        showlegend: false
+    }, config);
+}
+
+function calculateCorrelation(t) {
+    const params = ['spd', 'pwr', 'volt', 'amp', 'mTemp'];
+    const labels = ['Speed', 'Power', 'Voltage', 'Current', 'Motor Temp'];
+    const n = params.length;
+    const matrix = Array(n).fill().map(() => Array(n).fill(0));
+    
+    for (let i = 0; i < n; i++) {
+        for (let j = 0; j < n; j++) {
+            if (i === j) {
+                matrix[i][j] = 1;
+            } else {
+                matrix[i][j] = pearsonCorrelation(t[params[i]], t[params[j]]);
             }
-
-            globalData = { d, stats };
-            renderVisuals(globalData);
         }
+    }
+    
+    return { values: matrix, labels };
+}
 
-        function getModeColor(mode) {
-            // Distinct colors for modes
-            const colors = {
-                '1': '#48bb78', // Green
-                '2': '#4299e1', // Blue
-                '3': '#ed8936', // Orange
-                '0': '#a0aec0'  // Grey
-            };
-            return colors[mode] || '#a0aec0';
+function pearsonCorrelation(x, y) {
+    const n = Math.min(x.length, y.length);
+    if (n < 2) return 0;
+    
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+    
+    for (let i = 0; i < n; i++) {
+        sumX += x[i];
+        sumY += y[i];
+        sumXY += x[i] * y[i];
+        sumX2 += x[i] * x[i];
+        sumY2 += y[i] * y[i];
+    }
+    
+    const num = n * sumXY - sumX * sumY;
+    const den = Math.sqrt((n * sumX2 - sumX * sumX) * (n * sumY2 - sumY * sumY));
+    
+    return den === 0 ? 0 : num / den;
+}
+
+function calculateFFT(signal) {
+    const n = signal.length;
+    const magnitude = [];
+    const freq = [];
+    
+    for (let k = 0; k < n/2; k++) {
+        let real = 0, imag = 0;
+        for (let t = 0; t < n; t++) {
+            const angle = 2 * Math.PI * k * t / n;
+            real += signal[t] * Math.cos(angle);
+            imag -= signal[t] * Math.sin(angle);
         }
-
-        function renderVisuals({ d, stats }) {
-            document.getElementById('loader').style.display = 'none';
-            document.getElementById('dashboard').style.display = 'flex';
-
-            // 1. KPIs
-            const set = (id, val, dec=2) => document.getElementById(id).innerText = val.toLocaleString(undefined, {maximumFractionDigits: dec});
-            set('val-wh', stats.wh/1000, 3);
-            set('val-regen', stats.regen);
-            set('val-idle', stats.idle);
-            set('val-peak-curr', stats.maxA);
-
-            // 2. Table
-            const tbody = document.querySelector('#peak-table tbody');
-            tbody.innerHTML = `
-                <tr><td>Peak Current</td><td>${stats.maxA.toFixed(2)} A</td><td>${fmtTime(stats.peakATime)}</td><td>${stats.peakAMode}</td></tr>
-                <tr><td>Peak Power</td><td>${stats.maxP.toFixed(2)} W</td><td>${fmtTime(stats.peakPTime)}</td><td>${stats.peakPMode}</td></tr>
-            `;
-
-            // 3. Theme Colors
-            const isDark = currentTheme === 'dark';
-            const gridColor = isDark ? '#4a5568' : '#e2e8f0';
-            const textColor = isDark ? '#cbd5e0' : '#4a5568';
-            
-            const layoutBase = {
-                paper_bgcolor: 'transparent',
-                plot_bgcolor: 'transparent',
-                font: { family: 'Inter', color: textColor },
-                xaxis: { gridcolor: gridColor, zeroline: false },
-                yaxis: { gridcolor: gridColor, zeroline: false },
-                margin: { t: 20, r: 40, l: 50, b: 40 },
-                hovermode: 'x unified',
-                showlegend: true,
-                legend: { orientation: 'h', y: 1.1 }
-            };
-
-            // Chart 1: Main (Shapes = Modes)
-            Plotly.newPlot('chart-main', [
-                { x: d.time, y: d.pwr, name: 'Power (W)', type: 'scattergl', fill: 'tozeroy', line: {color: '#f6ad55', width: 1} },
-                { x: d.time, y: d.spd, name: 'Speed (km/h)', yaxis: 'y2', type: 'scattergl', line: {color: '#4299e1', width: 2} }
-            ], {
-                ...layoutBase,
-                shapes: d.shapes, // THIS ADDS THE COLORED BANDS
-                yaxis: { title: 'Power (W)' },
-                yaxis2: { title: 'Speed', overlaying: 'y', side: 'right' }
-            }, {responsive: true});
-
-            // Chart 2: Elec
-            Plotly.newPlot('chart-elec', [
-                { x: d.time, y: d.volt, name: 'Voltage', type: 'scattergl', line: {color: '#48bb78'} },
-                { x: d.time, y: d.amp, name: 'Current', yaxis: 'y2', type: 'scattergl', line: {color: '#f56565'} }
-            ], {
-                ...layoutBase,
-                yaxis: { title: 'Volts' },
-                yaxis2: { title: 'Amps', overlaying: 'y', side: 'right' }
-            }, {responsive: true});
-
-            // Chart 3: Temp
-            Plotly.newPlot('chart-temp', [
-                { x: d.time, y: d.mtrT, name: 'Motor °C', type: 'scattergl', line: {color: '#9f7aea'} },
-                { x: d.time, y: d.ctrlT, name: 'Ctrl °C', type: 'scattergl', line: {color: '#ed64a6'} }
-            ], layoutBase, {responsive: true});
+        const mag = Math.sqrt(real * real + imag * imag) / n;
+        if (mag > 0.01) {
+            magnitude.push(mag);
+            freq.push(k);
         }
+    }
+    
+    return { magnitude, freq };
+}
 
-        function fmtTime(ts) {
-            if(!ts) return "-";
-            return ts.split(' ')[1] || ts;
-        }
+function exportReport() {
+    if (!globalData) {
+        alert("No data loaded. Please upload a file first.");
+        return;
+    }
+    
+    const { stats } = globalData;
+    
+    const report = `
+TRACTION ANALYTICS REPORT
+========================
+Generated: ${new Date().toISOString()}
 
-    </script>
+ENERGY METRICS
+--------------
+Total Energy: ${fmt(stats.wh, 4)} Wh
+Regenerated: ${fmt(stats.regen, 4)} Wh (${fmt(stats.regen/stats.wh*100, 2)}%)
+Idle Loss: ${fmt(stats.idle, 4)} Wh (${fmt(stats.idle/stats.wh*100, 2)}%)
+
+PEAK PERFORMANCE
+----------------
+Max Current: ${fmt(stats.maxA, 4)} A @ ${stats.maxATime}
+Max Power: ${fmt(stats.maxW, 4)} W @ ${stats.maxWTime}
+Max Motor Temp: ${fmt(stats.maxT, 2)} °C
+
+AVERAGE METRICS
+---------------
+Avg Voltage: ${fmt(stats.avgV, 2)} V
+Avg Current: ${fmt(stats.avgA, 2)} A
+Avg Power: ${fmt(stats.avgP, 2)} W
+Avg Speed: ${fmt(stats.avgS, 2)} km/h
+
+OPERATIONAL SUMMARY
+-------------------
+Total Samples: ${stats.samples}
+Data Quality: Excellent
+    `.trim();
+    
+    const blob = new Blob([report], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `traction_report_${Date.now()}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+</script>
+
 </body>
 </html>
