@@ -212,7 +212,7 @@
         <div id="chart-mode-pie" style="width:100%; height:100%;"></div>
     </div>
 
-    <div class="panel full-width" style="height: 200px;">
+    <div class="panel full-width" style="height: 250px;">
         <div class="panel-header">Travel Mode Timeline <span class="panel-badge">TIMELINE</span></div>
         <div id="chart-modes" style="width:100%; height:100%;"></div>
     </div>
@@ -311,7 +311,7 @@ function processData(data) {
         
         let jsDate;
         try {
-            const cleanTime = tStr.length > 23 ? tStr.substring(0, 23) : tStr; 
+            const cleanTime = tStr && tStr.length > 23 ? tStr.substring(0, 23) : tStr; 
             jsDate = new Date(cleanTime);
         } catch(e) { return; }
         
@@ -325,7 +325,7 @@ function processData(data) {
         
         stats.modeCount[M] = (stats.modeCount[M] || 0) + 1;
         
-        const binIdx = Math.min(Math.floor(P / 500), 19);
+        const binIdx = Math.min(Math.floor(Math.abs(P) / 500), 19);
         if (binIdx >= 0) stats.powerBins[binIdx]++;
         
         if (A > stats.maxA) { 
@@ -457,6 +457,7 @@ function renderCharts(t, s) {
     
     const config = { responsive: true, displayModeBar: true, displaylogo: false, modeBarButtonsToRemove: ['lasso2d', 'select2d'] };
     
+    // 1. MAIN POWER/SPEED CHART
     Plotly.newPlot('chart-main', [
         { x: t.time, y: t.pwr, name: 'Power (W)', type: 'scattergl', fill: 'tozeroy', line: { color: '#ffa726', width: 1.5 }, fillcolor: 'rgba(255, 167, 38, 0.2)' },
         { x: t.time, y: t.spd, name: 'Speed (km/h)', yaxis: 'y2', type: 'scattergl', line: { color: '#4a9eff', width: 2 } }
@@ -466,6 +467,7 @@ function renderCharts(t, s) {
         yaxis2: { title: 'Speed (km/h)', overlaying: 'y', side: 'right', gridcolor: '#2d3441' }
     }, config);
     
+    // 2. ELECTRICAL V-I CHART
     Plotly.newPlot('chart-elec', [
         { x: t.time, y: t.volt, name: 'Voltage (V)', type: 'scattergl', line: { color: '#06d6a0', width: 1.5 } },
         { x: t.time, y: t.amp, name: 'Current (A)', yaxis: 'y2', type: 'scattergl', line: { color: '#e63946', width: 1.5 } }
@@ -475,64 +477,89 @@ function renderCharts(t, s) {
         yaxis2: { title: 'Current (A)', overlaying: 'y', side: 'right', gridcolor: '#2d3441' }
     }, config);
     
+    // 3. THERMAL CHART
     Plotly.newPlot('chart-thermal', [
         { x: t.time, y: t.mTemp, name: 'Motor Temp (°C)', type: 'scattergl', line: { color: '#e63946', width: 2 } },
         { x: t.time, y: t.cTemp, name: 'Controller Temp (°C)', type: 'scattergl', line: { color: '#ffa726', width: 2 } }
     ], { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Temperature (°C)' } }, config);
     
+    // 4. POWER DISTRIBUTION HISTOGRAM
     Plotly.newPlot('chart-power-dist', [{
         y: s.powerBins,
-        x: Array.from({length: 20}, (_, i) => `${i*500}-${(i+1)*500}W`),
+        x: Array.from({length: 20}, (_, i) => `${i*500}-${(i+1)*500}`),
         type: 'bar',
-        marker: { color: '#4a9eff', line: { color: '#2e7de6', width: 1 } }
+        marker: { color: '#4a9eff', line: { color: '#2e7de6', width: 1 } },
+        name: 'Sample Count'
     }], {
         ...baseLayout,
-        xaxis: { ...baseLayout.xaxis, title: 'Power Range', tickangle: -45 },
+        xaxis: { ...baseLayout.xaxis, title: 'Power Range (W)', tickangle: -45 },
         yaxis: { ...baseLayout.yaxis, title: 'Sample Count' },
         showlegend: false
     }, config);
     
-    const modeLabels = Object.keys(s.modeCount);
-    const modeValues = Object.values(s.modeCount);
+// 5. MODE PIE CHART
+    const modeLabels = Object.keys(s.modeCount).sort();
+    const modeValues = modeLabels.map(k => s.modeCount[k]);
     
     Plotly.newPlot('chart-mode-pie', [{
         labels: modeLabels.map(m => `Mode ${m}`),
         values: modeValues,
         type: 'pie',
-        marker: { colors: ['#4a9eff', '#06d6a0', '#ffa726', '#e63946', '#9c27b0', '#26c6da'] },
-        textinfo: 'label+percent',
-        textfont: { size: 12 }
+        hole: 0.3,
+        marker: {
+            colors: ['#4a9eff', '#06d6a0', '#ffa726', '#e63946', '#9c27b0', '#26c6da']
+        },
+        textinfo: 'label+percent+value',
+        textposition: 'auto',
+        textfont: { size: 11, color: '#ffffff' },
+        hoverinfo: 'label+percent+value'
     }], {
         paper_bgcolor: 'transparent',
         plot_bgcolor: 'transparent',
-        font: { color: '#e4e6eb', family: 'Inter' },
+        font: { color: '#e4e6eb', family: 'Inter', size: 11 },
         margin: { t: 20, l: 20, r: 20, b: 20 },
         showlegend: true,
-        legend: { orientation: 'v', x: 1.1, y: 0.5 }
+        legend: { orientation: 'v', x: 1.05, y: 0.5 }
     }, config);
-
+    
+    // 6. MODE TIMELINE
     const zData = t.mode.map(m => parseInt(m) || 0);
     Plotly.newPlot('chart-modes', [{
         x: t.time,
-        y: t.mode,
+        y: zData,
         mode: 'markers',
         type: 'scattergl',
-        marker: { color: zData, colorscale: 'Viridis', size: 6, symbol: 'square', line: { width: 0 } }
+        marker: { 
+            color: zData, 
+            colorscale: 'Viridis',
+            size: 8,
+            symbol: 'square',
+            line: { width: 0 },
+            colorbar: {
+                title: 'Mode',
+                thickness: 15,
+                len: 0.7
+            }
+        },
+        showlegend: false
     }], {
         ...baseLayout,
-        yaxis: { ...baseLayout.yaxis, title: 'Travel Mode', type: 'category' },
-        xaxis: { ...baseLayout.xaxis, title: 'Time' }
+        yaxis: { ...baseLayout.yaxis, title: 'Travel Mode', dtick: 1 },
+        xaxis: { ...baseLayout.xaxis, title: 'Time' },
+        margin: { t: 30, l: 50, r: 80, b: 50 }
     }, config);
     
+    // 7. EFFICIENCY GAUGE
     const avgEff = s.avgS > 0 ? (s.avgP / s.avgS) : 0;
     Plotly.newPlot('chart-efficiency', [{
         type: "indicator",
         mode: "gauge+number",
         value: avgEff,
-        title: { text: "Avg Efficiency (W/km/h)", font: { size: 12 } },
+        title: { text: "Avg Efficiency (W/km/h)", font: { size: 12, color: '#e4e6eb' } },
+        number: { font: { size: 40, color: '#e4e6eb' } },
         gauge: {
-            axis: { range: [null, 200], tickwidth: 1, tickcolor: "#2d3441" },
-            bar: { color: "#4a9eff" },
+            axis: { range: [null, 200], tickwidth: 1, tickcolor: "#2d3441", tickfont: { color: '#8b92a1' } },
+            bar: { color: "#4a9eff", thickness: 0.7 },
             bgcolor: "transparent",
             borderwidth: 2,
             bordercolor: "#2d3441",
@@ -541,7 +568,11 @@ function renderCharts(t, s) {
                 { range: [50, 100], color: "rgba(255, 167, 38, 0.2)" },
                 { range: [100, 200], color: "rgba(230, 57, 70, 0.2)" }
             ],
-            threshold: { line: { color: "#e63946", width: 4 }, thickness: 0.75, value: 150 }
+            threshold: { 
+                line: { color: "#e63946", width: 4 }, 
+                thickness: 0.75, 
+                value: 150 
+            }
         }
     }], {
         paper_bgcolor: 'transparent',
@@ -550,6 +581,7 @@ function renderCharts(t, s) {
         margin: { t: 40, l: 20, r: 20, b: 20 }
     }, config);
     
+    // 8. CORRELATION HEATMAP
     const corrMatrix = calculateCorrelation(t);
     Plotly.newPlot('chart-correlation', [{
         z: corrMatrix.values,
@@ -561,14 +593,19 @@ function renderCharts(t, s) {
         text: corrMatrix.values.map(row => row.map(v => v.toFixed(2))),
         texttemplate: '%{text}',
         textfont: { size: 10 },
-        colorbar: { thickness: 15 }
+        colorbar: { 
+            thickness: 15,
+            tickfont: { color: '#e4e6eb' }
+        },
+        hovertemplate: '%{y} vs %{x}<br>Correlation: %{z:.2f}<extra></extra>'
     }], {
         ...baseLayout,
-        xaxis: { ...baseLayout.xaxis, tickangle: -45 },
-        yaxis: { ...baseLayout.yaxis },
-        margin: { t: 20, l: 80, r: 40, b: 80 }
+        xaxis: { ...baseLayout.xaxis, tickangle: -45, side: 'bottom' },
+        yaxis: { ...baseLayout.yaxis, autorange: 'reversed' },
+        margin: { t: 20, l: 80, r: 60, b: 80 }
     }, config);
     
+    // 9. FFT SPECTRAL ANALYSIS
     const fftData = calculateFFT(t.amp.slice(0, Math.min(4096, t.amp.length)));
     Plotly.newPlot('chart-fft', [{
         x: fftData.freq,
@@ -576,7 +613,8 @@ function renderCharts(t, s) {
         type: 'scattergl',
         fill: 'tozeroy',
         line: { color: '#9c27b0', width: 1.5 },
-        fillcolor: 'rgba(156, 39, 176, 0.2)'
+        fillcolor: 'rgba(156, 39, 176, 0.2)',
+        name: 'Magnitude'
     }], {
         ...baseLayout,
         xaxis: { ...baseLayout.xaxis, title: 'Frequency (Hz)', type: 'log' },
@@ -585,6 +623,7 @@ function renderCharts(t, s) {
     }, config);
 }
 
+// CORRELATION CALCULATION
 function calculateCorrelation(t) {
     const params = ['spd', 'pwr', 'volt', 'amp', 'mTemp'];
     const labels = ['Speed', 'Power', 'Voltage', 'Current', 'Motor Temp'];
@@ -624,12 +663,13 @@ function pearsonCorrelation(x, y) {
     return den === 0 ? 0 : num / den;
 }
 
+// FFT CALCULATION
 function calculateFFT(signal) {
     const n = signal.length;
     const magnitude = [];
     const freq = [];
     
-    for (let k = 0; k < n/2; k++) {
+    for (let k = 1; k < n/2; k++) {
         let real = 0, imag = 0;
         for (let t = 0; t < n; t++) {
             const angle = 2 * Math.PI * k * t / n;
@@ -637,7 +677,7 @@ function calculateFFT(signal) {
             imag -= signal[t] * Math.sin(angle);
         }
         const mag = Math.sqrt(real * real + imag * imag) / n;
-        if (mag > 0.01) {
+        if (mag > 0.001) {
             magnitude.push(mag);
             freq.push(k);
         }
@@ -646,6 +686,7 @@ function calculateFFT(signal) {
     return { magnitude, freq };
 }
 
+// EXPORT REPORT FUNCTION
 function exportReport() {
     if (!globalData) {
         alert("No data loaded. Please upload a file first.");
@@ -655,40 +696,75 @@ function exportReport() {
     const { stats } = globalData;
     
     const report = `
-TRACTION ANALYTICS REPORT
-========================
-Generated: ${new Date().toISOString()}
+═══════════════════════════════════════════════════════════
+    TRACTION ANALYTICS REPORT - ENTERPRISE EDITION
+═══════════════════════════════════════════════════════════
+Generated: ${new Date().toLocaleString()}
 
+───────────────────────────────────────────────────────────
 ENERGY METRICS
---------------
-Total Energy: ${fmt(stats.wh, 4)} Wh
-Regenerated: ${fmt(stats.regen, 4)} Wh (${fmt(stats.regen/stats.wh*100, 2)}%)
-Idle Loss: ${fmt(stats.idle, 4)} Wh (${fmt(stats.idle/stats.wh*100, 2)}%)
+───────────────────────────────────────────────────────────
+Total Energy Consumed:     ${fmt(stats.wh, 4)} Wh
+Regenerated Energy:        ${fmt(stats.regen, 4)} Wh (${fmt(stats.regen/stats.wh*100, 2)}%)
+Idle Loss:                 ${fmt(stats.idle, 4)} Wh (${fmt(stats.idle/stats.wh*100, 2)}%)
+Net Efficiency:            ${fmt((stats.wh - stats.idle) / stats.wh * 100, 2)}%
 
-PEAK PERFORMANCE
-----------------
-Max Current: ${fmt(stats.maxA, 4)} A @ ${stats.maxATime}
-Max Power: ${fmt(stats.maxW, 4)} W @ ${stats.maxWTime}
-Max Motor Temp: ${fmt(stats.maxT, 2)} °C
+───────────────────────────────────────────────────────────
+PEAK PERFORMANCE INDICATORS
+───────────────────────────────────────────────────────────
+Max Current:               ${fmt(stats.maxA, 4)} A
+  Timestamp:               ${stats.maxATime}
+  Travel Mode:             Mode ${stats.maxAMode}
 
-AVERAGE METRICS
----------------
-Avg Voltage: ${fmt(stats.avgV, 2)} V
-Avg Current: ${fmt(stats.avgA, 2)} A
-Avg Power: ${fmt(stats.avgP, 2)} W
-Avg Speed: ${fmt(stats.avgS, 2)} km/h
+Max Power:                 ${fmt(stats.maxW, 4)} W
+  Timestamp:               ${stats.maxWTime}
+  Travel Mode:             Mode ${stats.maxWMode}
 
+Max Motor Temperature:     ${fmt(stats.maxT, 2)} °C
+  Timestamp:               ${stats.maxTTime}
+
+Max Controller Temp:       ${fmt(stats.maxCT, 2)} °C
+
+───────────────────────────────────────────────────────────
+AVERAGE OPERATING METRICS
+───────────────────────────────────────────────────────────
+Average Voltage:           ${fmt(stats.avgV, 2)} V
+Average Current:           ${fmt(stats.avgA, 2)} A
+Average Power:             ${fmt(stats.avgP, 2)} W
+Average Speed:             ${fmt(stats.avgS, 2)} km/h
+Average Efficiency:        ${fmt(stats.avgS > 0 ? stats.avgP / stats.avgS : 0, 2)} W/(km/h)
+
+───────────────────────────────────────────────────────────
+TRAVEL MODE DISTRIBUTION
+───────────────────────────────────────────────────────────
+${Object.keys(stats.modeCount).sort().map(mode => 
+    `Mode ${mode}:                  ${stats.modeCount[mode]} samples (${fmt(stats.modeCount[mode]/stats.samples*100, 2)}%)`
+).join('\n')}
+
+───────────────────────────────────────────────────────────
 OPERATIONAL SUMMARY
--------------------
-Total Samples: ${stats.samples}
-Data Quality: Excellent
+───────────────────────────────────────────────────────────
+Total Data Points:         ${stats.samples.toLocaleString()}
+Data Quality:              Excellent
+Analysis Status:           Complete
+
+───────────────────────────────────────────────────────────
+RECOMMENDATIONS
+───────────────────────────────────────────────────────────
+${stats.idle/stats.wh > 0.1 ? '⚠ High idle loss detected (>10%). Review idle power management.' : '✓ Idle loss within acceptable range.'}
+${stats.regen/stats.wh < 0.05 ? '⚠ Low regeneration (<5%). Check regenerative braking system.' : '✓ Regeneration system performing well.'}
+${stats.maxT > 100 ? '⚠ Motor temperature exceeded 100°C. Consider cooling system review.' : '✓ Thermal performance within normal range.'}
+
+═══════════════════════════════════════════════════════════
+End of Report
+═══════════════════════════════════════════════════════════
     `.trim();
     
     const blob = new Blob([report], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `traction_report_${Date.now()}.txt`;
+    a.download = `Traction_Analytics_Report_${Date.now()}.txt`;
     a.click();
     URL.revokeObjectURL(url);
 }
