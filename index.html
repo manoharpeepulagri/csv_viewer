@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#ffffff">
-    <title>Curtis Analytics | Time & Energy</title>
+    <title>Curtis Traction Analytics | Final</title>
     
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -13,85 +12,68 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 
     <style>
-        /* --- THEME --- */
         :root {
-            --bg-body: #f8f9fa;
-            --bg-card: #ffffff;
-            --bg-nav: #ffffff;
-            --text-main: #1a202c;
-            --text-sub: #718096;
-            --border: #e2e8f0;
-            --accent: #3182ce;
-            
-            --col-travel: #3182ce; /* Blue */
-            --col-field: #d69e2e;  /* Yellow */
-            --col-idle: #e53e3e;   /* Red */
-            --col-regen: #48bb78;  /* Green */
+            --bg-body: #f4f6f8; --bg-card: #ffffff; --bg-nav: #ffffff;
+            --text-main: #1a202c; --text-sub: #718096;
+            --border: #e2e8f0; --accent: #3182ce;
+            --travel: #3182ce; --field: #d69e2e; --idle: #e53e3e; --green: #48bb78;
         }
 
         [data-theme="dark"] {
-            --bg-body: #171923;
-            --bg-card: #2d3748;
-            --bg-nav: #2d3748;
-            --text-main: #f7fafc;
-            --text-sub: #a0aec0;
-            --border: #4a5568;
-            --accent: #63b3ed;
+            --bg-body: #171923; --bg-card: #2d3748; --bg-nav: #2d3748;
+            --text-main: #f7fafc; --text-sub: #a0aec0;
+            --border: #4a5568; --accent: #63b3ed;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
 
-        /* --- LAYOUT --- */
-        .nav-panel {
-            width: 250px; background: var(--bg-nav); border-right: 1px solid var(--border);
-            padding: 20px; display: flex; flex-direction: column; z-index: 50; box-shadow: 2px 0 5px rgba(0,0,0,0.05);
-        }
+        /* Layout */
+        .nav-panel { width: 260px; background: var(--bg-nav); border-right: 1px solid var(--border); padding: 20px; display: flex; flex-direction: column; z-index: 50; }
         .main-content { flex: 1; padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-        /* --- COMPONENTS --- */
-        .brand { font-size: 18px; font-weight: 800; margin-bottom: 25px; display: flex; align-items: center; gap: 8px; }
+        /* Components */
+        .brand { font-size: 18px; font-weight: 800; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
         .brand span { color: var(--accent); }
         
         .btn {
             background: var(--bg-body); border: 1px solid var(--border); color: var(--text-main);
-            padding: 12px; border-radius: 6px; font-weight: 600; cursor: pointer;
+            padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%;
             display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px;
-            transition: all 0.2s;
         }
-        .btn:hover { border-color: var(--accent); color: var(--accent); }
-        .btn-primary { background: var(--accent); color: #fff; border: none; }
-        .btn-primary:hover { background: #2b6cb0; }
+        .btn-primary { background: var(--accent); color: white; border: none; }
 
-        /* KPI GRIDS */
-        .section-title { font-size: 13px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin: 20px 0 10px 0; letter-spacing: 0.5px; }
+        /* KPI Grid */
+        .section-header { font-size: 12px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; margin: 20px 0 10px 0; letter-spacing: 0.5px; }
         .grid-kpi { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 15px; }
-        
-        .card { background: var(--bg-card); border-radius: 8px; padding: 15px; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.05); position: relative; }
-        
-        .kpi-label { font-size: 11px; color: var(--text-sub); text-transform: uppercase; font-weight: 700; margin-bottom: 5px; }
-        .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; }
+        .card { background: var(--bg-card); border-radius: 8px; padding: 15px; border: 1px solid var(--border); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .kpi-label { font-size: 11px; color: var(--text-sub); text-transform: uppercase; font-weight: 700; }
+        .kpi-val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; margin-top: 5px; }
         .kpi-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
 
-        /* CHARTS */
+        /* Charts */
         .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
-        .chart-box { height: 350px; display: flex; flex-direction: column; }
-        .chart-box-sm { height: 300px; }
-        .full-width { grid-column: span 2; height: 400px; }
+        .chart-box { height: 320px; display: flex; flex-direction: column; }
+        .full-width { grid-column: span 2; height: 380px; }
 
-        /* MOBILE OPTIMIZATION */
+        /* Table */
+        .table-wrap { overflow-x: auto; margin-top: 10px; border-radius: 6px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; background: var(--bg-card); }
+        th { text-align: left; padding: 12px; background: var(--bg-body); color: var(--text-sub); font-weight: 600; border-bottom: 1px solid var(--border); }
+        td { padding: 12px; border-bottom: 1px solid var(--border); font-family: 'JetBrains Mono', monospace; }
+        tr:last-child td { border-bottom: none; }
+
+        /* Mobile */
         @media (max-width: 900px) {
             body { flex-direction: column; height: auto; overflow: visible; }
-            .nav-panel {
-                width: 100%; height: auto; flex-direction: row; justify-content: space-between; align-items: center;
-                padding: 10px 15px; border-bottom: 1px solid var(--border); position: sticky; top: 0;
-            }
-            .brand { margin-bottom: 0; font-size: 16px; }
+            .nav-panel { width: 100%; height: auto; flex-direction: row; padding: 10px 15px; position: sticky; top: 0; align-items: center; justify-content: space-between; border-right: none; border-bottom: 1px solid var(--border); }
+            .brand { margin-bottom: 0; }
             .chart-grid { grid-template-columns: 1fr; }
             .full-width { grid-column: span 1; height: 320px; }
+            .btn { width: auto; margin-bottom: 0; }
         }
 
-        /* LOADER */
+        /* Loader */
         #loader { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; display: none; flex-direction: column; align-items: center; justify-content: center; color: white; }
         .spinner { width: 40px; height: 40px; border: 4px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -99,97 +81,100 @@
 </head>
 <body data-theme="light">
 
-<div id="loader"><div class="spinner"></div><p style="margin-top:15px; font-weight:600;">Analyzing Time & Energy...</p></div>
+<div id="loader"><div class="spinner"></div><p style="margin-top:15px; font-weight:600;">Processing Data...</p></div>
 
 <nav class="nav-panel">
     <div class="brand">CURTIS<span>ANALYTICS</span></div>
-    <div style="display:flex; gap:10px; width:100%; flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()" style="flex:1;">
-            📄 Upload Log
-        </button>
-        <button class="btn" onclick="toggleTheme()" style="width:50px;">🌗</button>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Upload Log</button>
+        <button class="btn" onclick="toggleTheme()">🌗</button>
     </div>
     <input type="file" id="fileInput" accept=".csv, .xlsx" hidden onchange="handleFile(this)">
-    <div id="fileInfo" style="font-size:11px; color:var(--text-sub); margin-top:10px; word-break:break-all;"></div>
+    <div id="fileInfo" style="font-size:11px; color:var(--text-sub); margin-top:10px;"></div>
 </nav>
 
 <div class="main-content" id="dashboard" style="display:none;">
 
-    <div class="section-title">⏱️ Time Distribution</div>
+    <div class="section-header">⏱️ Time Analysis</div>
     <div class="grid-kpi">
         <div class="card" style="border-left: 4px solid var(--text-main);">
             <div class="kpi-label">Total Duration</div>
-            <div class="kpi-val" id="time-total">0h 0m</div>
+            <div class="kpi-val" id="t-total">0h 0m</div>
             <div class="kpi-sub">Log Length</div>
         </div>
-        <div class="card" style="border-left: 4px solid var(--col-travel);">
+        <div class="card" style="border-left: 4px solid var(--travel);">
             <div class="kpi-label">Travel Time</div>
-            <div class="kpi-val" id="time-travel">0h 0m</div>
+            <div class="kpi-val" id="t-travel">0h 0m</div>
             <div class="kpi-sub">Transport Mode</div>
         </div>
-        <div class="card" style="border-left: 4px solid var(--col-field);">
+        <div class="card" style="border-left: 4px solid var(--field);">
             <div class="kpi-label">Field Time</div>
-            <div class="kpi-val" id="time-field">0h 0m</div>
+            <div class="kpi-val" id="t-field">0h 0m</div>
             <div class="kpi-sub">Active Operations</div>
         </div>
-        <div class="card" style="border-left: 4px solid var(--col-idle);">
+        <div class="card" style="border-left: 4px solid var(--idle);">
             <div class="kpi-label">Idle Time</div>
-            <div class="kpi-val" id="time-idle">0h 0m</div>
+            <div class="kpi-val" id="t-idle">0h 0m</div>
             <div class="kpi-sub">Stationary</div>
         </div>
     </div>
 
-    <div class="section-title">⚡ Energy Consumption</div>
+    <div class="section-header">⚡ Energy Analysis</div>
     <div class="grid-kpi">
         <div class="card" style="border-left: 4px solid var(--text-main);">
             <div class="kpi-label">Total Consumed</div>
-            <div class="kpi-val" id="kpi-total">0.00</div>
+            <div class="kpi-val" id="e-total">0.00</div>
             <div class="kpi-sub">kWh</div>
         </div>
-        <div class="card" style="border-left: 4px solid var(--col-travel);">
-            <div class="kpi-label">Travel Mode</div>
-            <div class="kpi-val" id="kpi-travel">0.00</div>
+        <div class="card" style="border-left: 4px solid var(--travel);">
+            <div class="kpi-label">Travel Energy</div>
+            <div class="kpi-val" id="e-travel">0.00</div>
             <div class="kpi-sub">kWh</div>
         </div>
-        <div class="card" style="border-left: 4px solid var(--col-field);">
-            <div class="kpi-label">Field Mode</div>
-            <div class="kpi-val" id="kpi-field">0.00</div>
+        <div class="card" style="border-left: 4px solid var(--field);">
+            <div class="kpi-label">Field Energy</div>
+            <div class="kpi-val" id="e-field">0.00</div>
             <div class="kpi-sub">kWh</div>
         </div>
-        <div class="card" style="border-left: 4px solid var(--col-regen);">
+        <div class="card" style="border-left: 4px solid var(--green);">
             <div class="kpi-label">Regenerated</div>
-            <div class="kpi-val" id="kpi-regen">0.00</div>
+            <div class="kpi-val" id="e-regen">0.00</div>
             <div class="kpi-sub">Wh Recovered</div>
         </div>
     </div>
 
-    <div class="chart-grid">
-        <div class="card chart-box-sm">
-            <div style="font-weight:600; font-size:13px; margin-bottom:5px;">Time Split (Field vs Travel)</div>
-            <div id="chart-pie" style="flex:1;"></div>
-        </div>
-
-        <div class="card chart-box-sm">
-            <div style="font-weight:600; font-size:13px; margin-bottom:5px;">Cumulative Energy (Wh)</div>
-            <div id="chart-cumul" style="flex:1;"></div>
-        </div>
+    <div class="section-header">🔥 System Peak Events Log</div>
+    <div class="card table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Peak Value</th>
+                    <th>Timestamp</th>
+                    <th>Context</th>
+                </tr>
+            </thead>
+            <tbody id="peak-table-body">
+                </tbody>
+        </table>
     </div>
 
+    <div class="section-header">📊 Visualizations</div>
+    
     <div class="chart-grid">
         <div class="card chart-box">
-            <div style="font-weight:600; font-size:13px; margin-bottom:5px;">Motor RPM vs Current</div>
-            <div id="chart-motor" style="flex:1;"></div>
+            <div style="font-weight:600; font-size:13px;">Cumulative Energy (Wh)</div>
+            <div id="chart-cumul" style="flex:1;"></div>
         </div>
-
         <div class="card chart-box">
-            <div style="font-weight:600; font-size:13px; margin-bottom:5px;">Component Temperatures</div>
-            <div id="chart-temp" style="flex:1;"></div>
+            <div style="font-weight:600; font-size:13px;">Motor RPM vs Current</div>
+            <div id="chart-motor" style="flex:1;"></div>
         </div>
     </div>
 
     <div class="card full-width" style="margin-top:15px;">
-        <div style="font-weight:600; font-size:13px; padding:15px 15px 0;">Power & Speed Timeline</div>
-        <div id="chart-power" style="height:350px;"></div>
+        <div style="padding:15px; font-weight:600; font-size:13px;">System Power & Speed Timeline</div>
+        <div id="chart-power" style="height:320px;"></div>
     </div>
 
 </div>
@@ -200,7 +185,7 @@
     function toggleTheme() {
         theme = theme === 'light' ? 'dark' : 'light';
         document.body.setAttribute('data-theme', theme);
-        if(window.processedData) render(window.processedData);
+        if(window.procData) render(window.procData);
     }
 
     function handleFile(input) {
@@ -225,143 +210,151 @@
     }
 
     function process(data) {
-        if(!data || data.length < 5) {
-            document.getElementById('loader').style.display = 'none';
-            return alert("Invalid Data");
-        }
+        if(!data || data.length < 5) return alert("Invalid Data");
 
-        // --- Column Mapping ---
+        // Column Mapping
         const k = Object.keys(data[0]);
         const find = (s) => k.find(key => s.some(x => key.toLowerCase().includes(x)));
 
-        const Cols = {
+        const C = {
             time: find(['timestamp', 'time']),
             spd: find(['speed']),
             volt: find(['voltage']),
             amp: find(['current']),
-            travel: find(['travel_mode', 'travel model']),
-            field: find(['field_mode', 'field mode']),
             rpm: find(['rpm']),
+            travel: find(['travel_mode']),
+            field: find(['field_mode']),
             mtrT: find(['mtr_temp']),
             ctrlT: find(['ctrl_temp'])
         };
 
-        const res = { 
-            t: [], spd: [], pwr: [], rpm: [], amp: [], mtrT: [], ctrlT: [], 
-            cumTravel: [], cumField: [] 
-        };
+        const res = { t:[], spd:[], pwr:[], rpm:[], amp:[], cumT:[], cumF:[] };
         
-        let stats = { 
-            totalWh: 0, travelWh: 0, fieldWh: 0, regenWh: 0, 
-            travelTime: 0, fieldTime: 0, idleTime: 0, totalTime: 0
+        let stats = {
+            tTotal:0, tTravel:0, tField:0, tIdle:0,
+            eTotal:0, eTravel:0, eField:0, eRegen:0
         };
 
-        let runTravel = 0, runField = 0;
-        let prevT = null;
+        let peaks = {
+            spd: {v:0, t:'-'}, pwr: {v:0, t:'-'}, amp: {v:0, t:'-'},
+            mtrT: {v:-99, t:'-'}, ctrlT: {v:-99, t:'-'}
+        };
 
-        // Decimation for rendering speed
+        let runTravel = 0, runField = 0, prevT = null;
         const step = Math.ceil(data.length / 5000);
 
         for(let i=0; i<data.length; i++) {
             const row = data[i];
-            let tStr = row[Cols.time];
+            let tStr = row[C.time];
             if(!tStr) continue;
+            if(tStr.length > 23) tStr = tStr.substring(0, 23); // Trim nano
             
-            // Handle nanoseconds
-            if(tStr.length > 23) tStr = tStr.substring(0, 23);
             const dt = new Date(tStr);
             if(isNaN(dt)) continue;
 
-            const V = parseFloat(row[Cols.volt])||0;
-            const A = parseFloat(row[Cols.amp])||0;
-            const S = parseFloat(row[Cols.spd])||0;
-            const RPM = parseFloat(row[Cols.rpm])||0;
-            
-            const isTravel = parseInt(row[Cols.travel]) > 0;
-            const isField = parseInt(row[Cols.field]) > 0;
-            
+            // Values
+            const S = parseFloat(row[C.spd])||0;
+            const V = parseFloat(row[C.volt])||0;
+            const A = parseFloat(row[C.amp])||0;
+            const RPM = parseFloat(row[C.rpm])||0;
+            const mT = parseFloat(row[C.mtrT])||0;
+            const cT = parseFloat(row[C.ctrlT])||0;
             const P = V * A;
 
+            const isTravel = parseInt(row[C.travel]) > 0;
+            const isField = parseInt(row[C.field]) > 0;
+            const tDisp = tStr.split(' ')[1] || tStr; // HH:MM:ss
+
+            // Peaks Check
+            if(S > peaks.spd.v) peaks.spd = {v:S, t:tDisp};
+            if(P > peaks.pwr.v) peaks.pwr = {v:P, t:tDisp};
+            if(A > peaks.amp.v) peaks.amp = {v:A, t:tDisp};
+            if(mT > peaks.mtrT.v) peaks.mtrT = {v:mT, t:tDisp};
+            if(cT > peaks.ctrlT.v) peaks.ctrlT = {v:cT, t:tDisp};
+
+            // Integration
             if(prevT) {
-                const diff = (dt - prevT) / 1000; // seconds
-                if(diff > 0 && diff < 300) { // Max 5 min gap
+                const diff = (dt - prevT) / 1000;
+                if(diff > 0 && diff < 300) {
+                    stats.tTotal += diff;
                     
-                    stats.totalTime += diff;
+                    // Time Accumulation
+                    if(isField) stats.tField += diff;
+                    else if(isTravel) stats.tTravel += diff;
+                    else if(S < 0.5) stats.tIdle += diff;
+                    else stats.tTravel += diff; // Moving default
 
-                    // --- TIME CALCULATION ---
-                    if(isField) {
-                        stats.fieldTime += diff;
-                    } else if(isTravel) {
-                        stats.travelTime += diff;
-                    } else {
-                        // If no specific mode, check movement
-                        if(S > 0.5) stats.travelTime += diff; // Moving but no mode = Travel
-                        else stats.idleTime += diff; // Stationary
-                    }
-
-                    // --- ENERGY CALCULATION ---
+                    // Energy Accumulation
                     const wh = (P * diff) / 3600;
                     if(wh > 0) {
-                        stats.totalWh += wh;
-                        if(isField) {
-                            stats.fieldWh += wh;
-                            runField += wh;
-                        } else if(isTravel) {
-                            stats.travelWh += wh;
-                            runTravel += wh;
-                        } else {
-                            // Default attribution
-                            if(S > 0.5) { stats.travelWh += wh; runTravel += wh; }
-                        }
+                        stats.eTotal += wh;
+                        if(isField) { stats.eField += wh; runField += wh; }
+                        else if(isTravel) { stats.eTravel += wh; runTravel += wh; }
+                        else if(S > 0.5) { stats.eTravel += wh; runTravel += wh; }
                     } else {
-                        stats.regenWh += Math.abs(wh);
+                        stats.eRegen += Math.abs(wh);
                     }
                 }
             }
             prevT = dt;
 
-            // Push Data
+            // Chart Data
             if(i % step === 0) {
                 res.t.push(tStr);
                 res.spd.push(S);
                 res.pwr.push(P);
                 res.rpm.push(RPM);
                 res.amp.push(A);
-                res.mtrT.push(parseFloat(row[Cols.mtrT])||0);
-                res.ctrlT.push(parseFloat(row[Cols.ctrlT])||0);
-                res.cumTravel.push(runTravel);
-                res.cumField.push(runField);
+                res.cumT.push(runTravel);
+                res.cumF.push(runField);
             }
         }
 
-        window.processedData = { res, stats };
-        render({ res, stats });
+        window.procData = { res, stats, peaks };
+        render(window.procData);
     }
 
-    function render({ res, stats }) {
+    function render({ res, stats, peaks }) {
         document.getElementById('loader').style.display = 'none';
         document.getElementById('dashboard').style.display = 'block';
 
-        // 1. Formatters
-        const fmtWh = (n) => n.toLocaleString(undefined, {maximumFractionDigits:2});
-        const fmtTime = (sec) => {
-            const h = Math.floor(sec / 3600);
-            const m = Math.floor((sec % 3600) / 60);
+        // Helpers
+        const fmtT = (s) => {
+            const h = Math.floor(s/3600);
+            const m = Math.floor((s%3600)/60);
             return `${h}h ${m}m`;
         };
+        const fmtN = (n,d=2) => n.toLocaleString(undefined, {maximumFractionDigits:d});
 
-        // 2. Update KPIs
-        document.getElementById('time-total').innerText = fmtTime(stats.totalTime);
-        document.getElementById('time-travel').innerText = fmtTime(stats.travelTime);
-        document.getElementById('time-field').innerText = fmtTime(stats.fieldTime);
-        document.getElementById('time-idle').innerText = fmtTime(stats.idleTime);
+        // 1. KPIs - Time
+        document.getElementById('t-total').innerText = fmtT(stats.tTotal);
+        document.getElementById('t-travel').innerText = fmtT(stats.tTravel);
+        document.getElementById('t-field').innerText = fmtT(stats.tField);
+        document.getElementById('t-idle').innerText = fmtT(stats.tIdle);
 
-        document.getElementById('kpi-total').innerText = fmtWh(stats.totalWh/1000);
-        document.getElementById('kpi-travel').innerText = fmtWh(stats.travelWh/1000);
-        document.getElementById('kpi-field').innerText = fmtWh(stats.fieldWh/1000);
-        document.getElementById('kpi-regen').innerText = fmtWh(stats.regenWh);
+        // 2. KPIs - Energy
+        document.getElementById('e-total').innerText = fmtN(stats.eTotal/1000);
+        document.getElementById('e-travel').innerText = fmtN(stats.eTravel/1000);
+        document.getElementById('e-field').innerText = fmtN(stats.eField/1000);
+        document.getElementById('e-regen').innerText = fmtN(stats.eRegen, 0);
 
-        // 3. Charts
+        // 3. Table Population
+        const tableBody = document.getElementById('peak-table-body');
+        const mkRow = (name, val, unit, time) => `<tr>
+            <td style="font-weight:600; color:var(--text-main)">${name}</td>
+            <td style="color:var(--accent); font-weight:700;">${fmtN(val)} ${unit}</td>
+            <td>${time}</td>
+            <td style="font-size:11px; color:var(--text-sub)">Max recorded</td>
+        </tr>`;
+        
+        tableBody.innerHTML = 
+            mkRow("Speed", peaks.spd.v, "km/h", peaks.spd.t) +
+            mkRow("Power", peaks.pwr.v, "W", peaks.pwr.t) +
+            mkRow("Current", peaks.amp.v, "A", peaks.amp.t) +
+            mkRow("Motor Temp", peaks.mtrT.v, "°C", peaks.mtrT.t) +
+            mkRow("Controller Temp", peaks.ctrlT.v, "°C", peaks.ctrlT.t);
+
+        // 4. Charts
         const isDark = theme === 'dark';
         const color = isDark ? '#e2e8f0' : '#2d3748';
         const grid = isDark ? '#4a5568' : '#e2e8f0';
@@ -369,46 +362,23 @@
         const layout = {
             paper_bgcolor: 'transparent', plot_bgcolor: 'transparent',
             font: { family: 'Inter', color: color, size: 11 },
-            xaxis: { gridcolor: grid, zeroline: false },
-            yaxis: { gridcolor: grid, zeroline: false },
+            xaxis: { gridcolor: grid }, yaxis: { gridcolor: grid },
             margin: { t: 20, r: 10, l: 40, b: 30 },
             showlegend: true, legend: { orientation:'h', y:1.1 },
             hovermode: 'x unified'
         };
         const config = { responsive: true, displayModeBar: false };
 
-        // Chart 1: Time Pie
-        Plotly.newPlot('chart-pie', [{
-            values: [stats.travelTime, stats.fieldTime, stats.idleTime],
-            labels: ['Travel Time', 'Field Time', 'Idle Time'],
-            type: 'pie',
-            marker: { colors: ['#3182ce', '#d69e2e', '#e53e3e'] },
-            textinfo: 'percent', hoverinfo: 'label+value+percent'
-        }], { 
-            ...layout, showlegend:true, 
-            margin: { t:0, b:0, l:0, r:0 },
-            legend: { orientation:'h', y:-0.1 } // Legend below pie
-        }, config);
-
-        // Chart 2: Cumulative Energy
         Plotly.newPlot('chart-cumul', [
-            { x: res.t, y: res.cumTravel, name: 'Travel Wh', type: 'scattergl', line: {color: '#3182ce'} },
-            { x: res.t, y: res.cumField, name: 'Field Wh', type: 'scattergl', line: {color: '#d69e2e'} }
+            { x: res.t, y: res.cumT, name: 'Travel Wh', type: 'scattergl', line: {color: '#3182ce'} },
+            { x: res.t, y: res.cumF, name: 'Field Wh', type: 'scattergl', line: {color: '#d69e2e'} }
         ], { ...layout, yaxis: { title: 'Wh' } }, config);
 
-        // Chart 3: Motor
         Plotly.newPlot('chart-motor', [
             { x: res.t, y: res.rpm, name: 'RPM', type: 'scattergl', line: {color: '#805ad5'} },
-            { x: res.t, y: res.amp, name: 'Current', yaxis: 'y2', type: 'scattergl', line: {color: '#e53e3e'} }
-        ], { ...layout, yaxis2: { overlaying: 'y', side: 'right', showgrid:false } }, config);
+            { x: res.t, y: res.amp, name: 'Current (A)', yaxis: 'y2', type: 'scattergl', line: {color: '#e53e3e'} }
+        ], { ...layout, yaxis2: { overlaying: 'y', side: 'right' } }, config);
 
-        // Chart 4: Thermal
-        Plotly.newPlot('chart-temp', [
-            { x: res.t, y: res.mtrT, name: 'Motor °C', type: 'scattergl', line: {color: '#e53e3e'} },
-            { x: res.t, y: res.ctrlT, name: 'Ctrl °C', type: 'scattergl', line: {color: '#38a169'} }
-        ], layout, config);
-
-        // Chart 5: Power
         Plotly.newPlot('chart-power', [
             { x: res.t, y: res.pwr, name: 'Power (W)', type: 'scattergl', fill:'tozeroy', line: {color: '#dd6b20', width:1} },
             { x: res.t, y: res.spd, name: 'Speed', yaxis: 'y2', type: 'scattergl', line: {color: '#3182ce', width:2} }
